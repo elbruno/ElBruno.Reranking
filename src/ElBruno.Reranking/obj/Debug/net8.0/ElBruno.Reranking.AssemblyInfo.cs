@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("A .NET library for semantic reranking of search results using BGE and Claude back" +
     "ends"))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.5.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.5.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.5.0+aed888871307cd815d762f55d7b39dd599188fcd")]
 [assembly: System.Reflection.AssemblyProductAttribute("ElBruno.Reranking")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ElBruno.Reranking")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.5.0.0")]

@@ -9,3 +9,6 @@ C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.d
 C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\refint\ElBruno.Reranking.dll
 C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.pdb
 C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ref\ElBruno.Reranking.dll
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\bin\Debug\net8.0\ElBruno.Reranking.xml
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.csproj.AssemblyReference.cache
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.xml

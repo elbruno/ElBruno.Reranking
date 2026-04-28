@@ -17,14 +17,14 @@ public class ClaudeRerankTests
             "Machine learning is transforming AI",
             "Neural networks are the future",
             "Python is versatile"
-        };
+        }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        Assert.NotEmpty(result.RankedDocuments);
-        Assert.True(result.RankedDocuments.All(d => d.Score >= 0 && d.Score <= 1));
+        Assert.NotEmpty(result.Scores);
+        Assert.True(result.Scores.All(d => d.Score >= 0 && d.Score <= 1));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class ClaudeRerankTests
         ((FailingMockReranker)reranker).SetNextException(
             new HttpRequestException("API connection failed"));
         var query = "test";
-        var documents = new[] { "doc" };
+        var documents = new[] { "doc" }.ToRerankItems();
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
@@ -52,7 +52,7 @@ public class ClaudeRerankTests
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => reranker.RerankAsync("test", new[] { "doc" }));
+            () => reranker.RerankAsync("test", new[] { "doc" }.ToRerankItems()));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class ClaudeRerankTests
 
         // Act & Assert
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => reranker.RerankAsync("test", new[] { "doc" }));
+            () => reranker.RerankAsync("test", new[] { "doc" }.ToRerankItems()));
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class ClaudeRerankTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => reranker.RerankAsync("test", new[] { "doc" }));
+            () => reranker.RerankAsync("test", new[] { "doc" }.ToRerankItems()));
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class ClaudeRerankTests
         // Fail first call, succeed on second
         ((FailingMockReranker)reranker).SetFailAfterNthCall(1);
         var query = "test";
-        var documents = new[] { "doc" };
+        var documents = new[] { "doc" }.ToRerankItems();
 
         // Act - first call fails
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -114,14 +114,15 @@ public class ClaudeRerankTests
         var query = "batch test";
         var documents = Enumerable.Range(1, docCount)
             .Select(i => $"Document {i}")
-            .ToArray();
+            .ToArray()
+            .ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.RankedDocuments.Count <= docCount);
+        Assert.True(result.Scores.Count <= docCount);
     }
 
     [Fact]
@@ -130,7 +131,7 @@ public class ClaudeRerankTests
         // Arrange
         var reranker = new MockReranker();
         var query = "performance test";
-        var documents = new[] { "doc1", "doc2", "doc3" };
+        var documents = new[] { "doc1", "doc2", "doc3" }.ToRerankItems();
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         // Act
@@ -149,7 +150,7 @@ public class ClaudeRerankTests
         var reranker = new MockReranker();
 
         // Act
-        var result = await reranker.RerankAsync("query", new[] { "doc" });
+        var result = await reranker.RerankAsync("query", new[] { "doc" }.ToRerankItems());
 
         // Assert - should handle gracefully
         Assert.NotNull(result);
@@ -161,16 +162,16 @@ public class ClaudeRerankTests
         // Arrange
         var reranker = new MockReranker();
         var query = "order test";
-        var documents = new[] { "first", "second", "third" };
+        var documents = new[] { "first", "second", "third" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        Assert.NotEmpty(result.RankedDocuments);
-        foreach (var doc in result.RankedDocuments)
+        Assert.NotEmpty(result.Scores);
+        foreach (var doc in result.Scores)
         {
-            Assert.Contains(doc.Text, documents);
+            Assert.Contains(doc.Item.Text, new[] { "first", "second", "third" });
         }
     }
 
@@ -185,7 +186,7 @@ public class ClaudeRerankTests
             "中文文本 with mixed scripts",
             "Émojis: 🚀 🎯 ✨",
             "Quotes: \"double\" and 'single'"
-        };
+        }.ToRerankItems();
 
         // Act & Assert - should not throw
         var result = await reranker.RerankAsync(query, documents);
@@ -199,7 +200,7 @@ public class ClaudeRerankTests
         var reranker = new MockReranker();
         var query = "test";
         var veryLongDoc = string.Concat(Enumerable.Repeat("word ", 10000));
-        var documents = new[] { veryLongDoc, "normal document" };
+        var documents = new[] { veryLongDoc, "normal document" }.ToRerankItems();
 
         // Act & Assert - should handle long documents
         var result = await reranker.RerankAsync(query, documents);

@@ -14,7 +14,7 @@ public class EdgeCaseTests
         // Act & Assert - should handle null or throw appropriate exception
         try
         {
-            await reranker.RerankAsync(null!, new[] { "doc" });
+            await reranker.RerankAsync(null!, new[] { "doc" }.ToRerankItems());
         }
         catch (ArgumentNullException)
         {
@@ -45,7 +45,7 @@ public class EdgeCaseTests
         // Arrange
         var reranker = new MockReranker();
         var longQuery = string.Concat(Enumerable.Repeat("word ", 10000));
-        var documents = new[] { "doc1", "doc2" };
+        var documents = new[] { "doc1", "doc2" }.ToRerankItems();
 
         // Act & Assert
         var result = await reranker.RerankAsync(longQuery, documents);
@@ -58,13 +58,13 @@ public class EdgeCaseTests
         // Arrange
         var reranker = new MockReranker();
         var query = "a b c";
-        var documents = new[] { "a", "b", "c", "d", "e" };
+        var documents = new[] { "a", "b", "c", "d", "e" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        Assert.NotEmpty(result.RankedDocuments);
+        Assert.NotEmpty(result.Scores);
     }
 
     [Fact]
@@ -73,13 +73,13 @@ public class EdgeCaseTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test";
-        var documents = new[] { "same doc", "same doc", "same doc", "different" };
+        var documents = new[] { "same doc", "same doc", "same doc", "different" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert - should handle duplicates
-        Assert.NotEmpty(result.RankedDocuments);
+        Assert.NotEmpty(result.Scores);
     }
 
     [Fact]
@@ -88,7 +88,9 @@ public class EdgeCaseTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test";
-        var documents = new[] { "   ", "\t\t", "\n", "valid" };
+        // Note: RerankItem doesn't allow whitespace-only text per specification
+        // Test with minimal content instead
+        var documents = new[] { "a", "ab", "abc", "valid" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
@@ -106,7 +108,7 @@ public class EdgeCaseTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test";
-        var documents = TestData.Documents.StandardSet;
+        var documents = TestData.Documents.StandardSet.ToRerankItems();
         var options = new RerankOptions { TopK = topK };
 
         // Act
@@ -121,10 +123,10 @@ public class EdgeCaseTests
     {
         // Arrange
         var reranker = new MockReranker();
-        var options = new RerankOptions { MinScore = 2.0 }; // Invalid: > 1.0
+        var options = new RerankOptions { MinScore = (float)2.0 }; // Invalid: > 1.0
 
         // Act & Assert - should either handle or throw
-        var result = await reranker.RerankAsync("test", new[] { "doc" }, options);
+        var result = await reranker.RerankAsync("test", new[] { "doc" }.ToRerankItems(), options);
         Assert.NotNull(result);
     }
 
@@ -133,10 +135,10 @@ public class EdgeCaseTests
     {
         // Arrange
         var reranker = new MockReranker();
-        var options = new RerankOptions { MinScore = 0.0001 };
+        var options = new RerankOptions { MinScore = (float)0.0001 };
 
         // Act
-        var result = await reranker.RerankAsync("test", new[] { "doc" }, options);
+        var result = await reranker.RerankAsync("test", new[] { "doc" }.ToRerankItems(), options);
 
         // Assert
         Assert.NotNull(result);
@@ -153,7 +155,7 @@ public class EdgeCaseTests
         // Act & Assert
         try
         {
-            await reranker.RerankAsync("test", new[] { "doc" }, cancellationToken: cts.Token);
+            await reranker.RerankAsync("test", new[] { "doc" }.ToRerankItems(), cancellationToken: cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -168,7 +170,7 @@ public class EdgeCaseTests
         var reranker = new MockReranker();
 
         // Act
-        var result = await reranker.RerankAsync("", new[] { "doc" });
+        var result = await reranker.RerankAsync("", new[] { "doc" }.ToRerankItems());
 
         // Assert
         Assert.NotNull(result);
@@ -180,7 +182,7 @@ public class EdgeCaseTests
         // Arrange
         var reranker = new MockReranker();
         var specialQuery = "!@#$%^&*()[]{}|\\:;\"'<>,.?/";
-        var documents = new[] { "doc1", "doc2" };
+        var documents = new[] { "doc1", "doc2" }.ToRerankItems();
 
         // Act & Assert - should not crash
         var result = await reranker.RerankAsync(specialQuery, documents);
@@ -198,13 +200,13 @@ public class EdgeCaseTests
             "line1\nline2\nline3",
             "single line",
             "line1\r\nline2\r\nline3"
-        };
+        }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        Assert.NotEmpty(result.RankedDocuments);
+        Assert.NotEmpty(result.Scores);
     }
 
     [Fact]
@@ -215,13 +217,14 @@ public class EdgeCaseTests
         var query = "test";
         var documents = Enumerable.Range(1, 5000)
             .Select(i => $"Document {i}")
-            .ToArray();
+            .ToArray()
+            .ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(5000, result.TotalDocuments);
+        Assert.Equal(5000, result.TotalItems);
     }
 }

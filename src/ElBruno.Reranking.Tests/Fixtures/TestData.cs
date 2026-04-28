@@ -48,12 +48,9 @@ public static class TestData
 
         public static readonly string[] EdgeCaseSet = new[]
         {
-            "",
-            " ",
             "a",
             "Very long document " + string.Join(" ", Enumerable.Repeat("word", 1000)),
             "Special!@#$%^&*()Characters",
-            "\n\t\r",
             "你好世界 中文文本",
             "Émojis and äccënts 🚀"
         };

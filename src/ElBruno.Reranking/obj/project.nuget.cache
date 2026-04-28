@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "LxGqPDb7B8E=",
+  "dgSpecHash": "o1xbjcO4Mxc=",
   "success": true,
   "projectFilePath": "C:\\src\\ElBruno.Rerank\\src\\ElBruno.Reranking\\ElBruno.Reranking.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\brunocapuano\\.nuget\\packages\\microsoft.codeanalysis.netanalyzers\\8.0.0\\microsoft.codeanalysis.netanalyzers.8.0.0.nupkg.sha512",
+    "C:\\Users\\brunocapuano\\.nuget\\packages\\microsoft.ml.onnxruntime\\1.17.0\\microsoft.ml.onnxruntime.1.17.0.nupkg.sha512",
+    "C:\\Users\\brunocapuano\\.nuget\\packages\\microsoft.ml.onnxruntime.managed\\1.17.0\\microsoft.ml.onnxruntime.managed.1.17.0.nupkg.sha512",
+    "C:\\Users\\brunocapuano\\.nuget\\packages\\system.memory\\4.5.5\\system.memory.4.5.5.nupkg.sha512"
+  ],
   "logs": []
 }

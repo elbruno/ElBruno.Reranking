@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ElBruno.Reranking.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aed888871307cd815d762f55d7b39dd599188fcd")]
 [assembly: System.Reflection.AssemblyProductAttribute("ElBruno.Reranking.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ElBruno.Reranking.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

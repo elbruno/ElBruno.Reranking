@@ -12,14 +12,14 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2", "doc3" };
+        var documents = new[] { "doc1", "doc2", "doc3" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotNull(result.RankedDocuments);
+        Assert.NotNull(result.Scores);
     }
 
     [Fact]
@@ -28,14 +28,14 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = Array.Empty<string>();
+        var documents = Array.Empty<string>().ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Empty(result.RankedDocuments);
+        Assert.Empty(result.Scores);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "";
-        var documents = new[] { "doc1", "doc2" };
+        var documents = new[] { "doc1", "doc2" }.ToRerankItems();
 
         // Act & Assert - should not throw
         var result = await reranker.RerankAsync(query, documents);
@@ -57,15 +57,15 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2", "doc3" };
+        var documents = new[] { "doc1", "doc2", "doc3" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        foreach (var doc in result.RankedDocuments)
+        foreach (var doc in result.Scores)
         {
-            Assert.InRange(doc.Score, 0.0, 1.0);
+            Assert.InRange(doc.Score, 0.0f, 1.0f);
         }
     }
 
@@ -75,15 +75,15 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2", "doc3" };
+        var documents = new[] { "doc1", "doc2", "doc3" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        for (int i = 0; i < result.RankedDocuments.Count; i++)
+        for (int i = 0; i < result.Scores.Count; i++)
         {
-            Assert.Equal(i + 1, result.RankedDocuments[i].Rank);
+            Assert.Equal(i + 1, result.Scores[i].Rank);
         }
     }
 
@@ -93,16 +93,16 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2", "doc3" };
+        var documents = new[] { "doc1", "doc2", "doc3" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        for (int i = 0; i < result.RankedDocuments.Count - 1; i++)
+        for (int i = 0; i < result.Scores.Count - 1; i++)
         {
             Assert.True(
-                result.RankedDocuments[i].Score >= result.RankedDocuments[i + 1].Score,
+                result.Scores[i].Score >= result.Scores[i + 1].Score,
                 "Scores must be in descending order");
         }
     }
@@ -113,14 +113,14 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2", "doc3", "doc4", "doc5" };
+        var documents = new[] { "doc1", "doc2", "doc3", "doc4", "doc5" }.ToRerankItems();
         var options = new RerankOptions { TopK = 3 };
 
         // Act
         var result = await reranker.RerankAsync(query, documents, options);
 
         // Assert
-        Assert.Equal(3, result.RankedDocuments.Count);
+        Assert.Equal(3, result.Scores.Count);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2" };
+        var documents = new[] { "doc1", "doc2" }.ToRerankItems();
 
         // Act
         var task = reranker.RerankAsync(query, documents);
@@ -145,7 +145,7 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2" };
+        var documents = new[] { "doc1", "doc2" }.ToRerankItems();
         var cts = new CancellationTokenSource();
 
         // Act
@@ -183,14 +183,14 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test";
-        var documents = new[] { "document one", "document two", "document three" };
+        var documents = new[] { "document one", "document two", "document three" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        var resultTexts = result.RankedDocuments.Select(d => d.Text).ToList();
-        foreach (var originalDoc in documents)
+        var resultTexts = result.Scores.Select(d => d.Item.Text).ToList();
+        foreach (var originalDoc in new[] { "document one", "document two", "document three" })
         {
             Assert.Contains(originalDoc, resultTexts);
         }
@@ -202,12 +202,12 @@ public class RerankerContractTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test query";
-        var documents = new[] { "doc1", "doc2", "doc3", "doc4", "doc5" };
+        var documents = new[] { "doc1", "doc2", "doc3", "doc4", "doc5" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        Assert.Equal(documents.Length, result.TotalDocuments);
+        Assert.Equal(documents.Count(), result.TotalItems);
     }
 }

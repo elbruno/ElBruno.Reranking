@@ -30,7 +30,7 @@ public class RerankingBenchmarks
     {
         await _reranker!.RerankAsync(
             TestData.Queries.SearchQuery,
-            _smallDocuments!);
+            _smallDocuments!.ToRerankItems());
     }
 
     [Benchmark(Description = "Medium Dataset (20 docs)")]
@@ -38,7 +38,7 @@ public class RerankingBenchmarks
     {
         await _reranker!.RerankAsync(
             TestData.Queries.SearchQuery,
-            _mediumDocuments!);
+            _mediumDocuments!.ToRerankItems());
     }
 
     [Benchmark(Description = "Large Dataset (100 docs)")]
@@ -46,7 +46,7 @@ public class RerankingBenchmarks
     {
         await _reranker!.RerankAsync(
             TestData.Queries.SearchQuery,
-            _largeDocuments!);
+            _largeDocuments!.ToRerankItems());
     }
 
     [Benchmark(Description = "With TopK=10 Filtering")]
@@ -55,7 +55,7 @@ public class RerankingBenchmarks
         var options = new RerankOptions { TopK = 10 };
         await _reranker!.RerankAsync(
             TestData.Queries.SearchQuery,
-            _largeDocuments!,
+            _largeDocuments!.ToRerankItems(),
             options);
     }
 
@@ -64,7 +64,7 @@ public class RerankingBenchmarks
     {
         await _reranker!.RerankAsync(
             TestData.Queries.ComplexQuery,
-            _mediumDocuments!);
+            _mediumDocuments!.ToRerankItems());
     }
 }
 
@@ -89,7 +89,7 @@ public class BgeBenchmarks
     {
         await _reranker!.RerankAsync(
             "machine learning",
-            _testDocuments!);
+            _testDocuments!.ToRerankItems());
     }
 
     [Benchmark(Description = "BGE - 50 Documents")]
@@ -98,7 +98,7 @@ public class BgeBenchmarks
         var docs = _testDocuments!.Take(50).ToArray();
         await _reranker!.RerankAsync(
             "machine learning",
-            docs);
+            docs.ToRerankItems());
     }
 
     [Benchmark(Description = "BGE - 100 Documents")]
@@ -107,7 +107,7 @@ public class BgeBenchmarks
         var docs = _testDocuments!.Take(100).ToArray();
         await _reranker!.RerankAsync(
             "machine learning",
-            docs);
+            docs.ToRerankItems());
     }
 }
 
@@ -132,7 +132,7 @@ public class ClaudeBenchmarks
     {
         await _reranker!.RerankAsync(
             "neural networks",
-            _testDocuments!);
+            _testDocuments!.ToRerankItems());
     }
 
     [Benchmark(Description = "Claude - Batch of 10")]
@@ -140,16 +140,16 @@ public class ClaudeBenchmarks
     {
         await _reranker!.RerankAsync(
             "neural networks",
-            _testDocuments!);
+            _testDocuments!.ToRerankItems());
     }
 
     [Benchmark(Description = "Claude - With Retry Logic")]
     public async Task Claude_WithRetryLogic()
     {
-        var options = new RerankOptions { EnableRetry = true, MaxRetries = 3 };
+        var options = new RerankOptions();
         await _reranker!.RerankAsync(
             "neural networks",
-            _testDocuments!,
+            _testDocuments!.ToRerankItems(),
             options);
     }
 }

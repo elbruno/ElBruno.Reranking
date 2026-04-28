@@ -12,15 +12,15 @@ public class RerankerIntegrationTests
         // Arrange
         var reranker = new MockReranker();
         var query = TestData.Queries.SearchQuery;
-        var documents = TestData.Documents.StandardSet;
+        var documents = TestData.Documents.StandardSet.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result.RankedDocuments);
-        Assert.Equal(documents.Length, result.TotalDocuments);
+        Assert.NotEmpty(result.Scores);
+        Assert.Equal(TestData.Documents.StandardSet.Length, result.TotalItems);
     }
 
     [Fact]
@@ -30,19 +30,19 @@ public class RerankerIntegrationTests
         var reranker1 = new MockReranker();
         var reranker2 = new MockReranker();
         var query = "neural networks";
-        var documents = TestData.Documents.StandardSet;
+        var documents = TestData.Documents.StandardSet.ToRerankItems();
 
         // Act - First reranker
         var result1 = await reranker1.RerankAsync(query, documents);
 
         // Use top results from first reranker as input to second
-        var topDocs = result1.RankedDocuments.Take(5).Select(d => d.Text).ToArray();
+        var topDocs = result1.Scores.Take(5).Select(d => d.Item.Text).ToArray().ToRerankItems();
         var result2 = await reranker2.RerankAsync(query, topDocs);
 
         // Assert
-        Assert.NotEmpty(result1.RankedDocuments);
-        Assert.NotEmpty(result2.RankedDocuments);
-        Assert.True(result2.RankedDocuments.Count <= 5);
+        Assert.NotEmpty(result1.Scores);
+        Assert.NotEmpty(result2.Scores);
+        Assert.True(result2.Scores.Count <= 5);
     }
 
     [Fact]
@@ -51,17 +51,17 @@ public class RerankerIntegrationTests
         // Arrange
         var reranker = new MockReranker();
         var query = TestData.Queries.ComplexQuery;
-        var documents = TestData.Documents.LargeSet;
+        var documents = TestData.Documents.LargeSet.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        Assert.Equal(documents.Length, result.TotalDocuments);
-        Assert.NotEmpty(result.RankedDocuments);
-        foreach (var doc in result.RankedDocuments)
+        Assert.Equal(TestData.Documents.LargeSet.Length, result.TotalItems);
+        Assert.NotEmpty(result.Scores);
+        foreach (var doc in result.Scores)
         {
-            Assert.InRange(doc.Score, 0.0, 1.0);
+            Assert.InRange(doc.Score, 0.0f, 1.0f);
             Assert.True(doc.Rank > 0);
         }
     }
@@ -82,17 +82,17 @@ public class RerankerIntegrationTests
         // Act - Stage 1: BGE fast reranking
         var stage1Result = await bgeReranker.RerankAsync(
             query, 
-            allDocs,
+            allDocs.ToRerankItems(),
             new RerankOptions { TopK = 5 });
 
         // Stage 2: Claude high-precision reranking
-        var topDocs = stage1Result.RankedDocuments.Select(d => d.Text).ToArray();
+        var topDocs = stage1Result.Scores.Select(d => d.Item.Text).ToArray().ToRerankItems();
         var stage2Result = await claudeReranker.RerankAsync(query, topDocs);
 
         // Assert
-        Assert.NotEmpty(stage1Result.RankedDocuments);
-        Assert.NotEmpty(stage2Result.RankedDocuments);
-        Assert.True(stage2Result.RankedDocuments.Count <= stage1Result.RankedDocuments.Count);
+        Assert.NotEmpty(stage1Result.Scores);
+        Assert.NotEmpty(stage2Result.Scores);
+        Assert.True(stage2Result.Scores.Count <= stage1Result.Scores.Count);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class RerankerIntegrationTests
             TestData.Queries.SimpleQuery,
             TestData.Queries.ComplexQuery
         };
-        var documents = TestData.Documents.StandardSet;
+        var documents = TestData.Documents.StandardSet.ToRerankItems();
 
         // Act
         var results = new List<RerankResult>();
@@ -120,7 +120,7 @@ public class RerankerIntegrationTests
         Assert.Equal(queries.Length, results.Count);
         foreach (var result in results)
         {
-            Assert.NotEmpty(result.RankedDocuments);
+            Assert.NotEmpty(result.Scores);
         }
     }
 
@@ -133,9 +133,9 @@ public class RerankerIntegrationTests
         // Test various edge case combinations
         var testCases = new[]
         {
-            (query: "", docs: TestData.Documents.StandardSet),
-            (query: TestData.Queries.SearchQuery, docs: Array.Empty<string>()),
-            (query: TestData.Queries.SingleWordQuery, docs: TestData.Documents.EdgeCaseSet),
+            (query: "", docs: TestData.Documents.StandardSet.ToRerankItems()),
+            (query: TestData.Queries.SearchQuery, docs: Array.Empty<string>().ToRerankItems()),
+            (query: TestData.Queries.SingleWordQuery, docs: TestData.Documents.EdgeCaseSet.ToRerankItems()),
         };
 
         // Act & Assert - all should complete without throwing
@@ -152,7 +152,7 @@ public class RerankerIntegrationTests
         // Arrange
         var reranker = new MockReranker();
         var query = TestData.Queries.SearchQuery;
-        var documents = TestData.Documents.StandardSet;
+        var documents = TestData.Documents.StandardSet.ToRerankItems();
 
         // Act - concurrent calls
         var tasks = Enumerable.Range(0, 5)
@@ -165,7 +165,7 @@ public class RerankerIntegrationTests
         Assert.Equal(5, results.Length);
         foreach (var result in results)
         {
-            Assert.NotEmpty(result.RankedDocuments);
+            Assert.NotEmpty(result.Scores);
         }
     }
 
@@ -175,15 +175,15 @@ public class RerankerIntegrationTests
         // Arrange
         var reranker = new MockReranker();
         var query = TestData.Queries.SearchQuery;
-        var documents = TestData.Documents.LargeSet;
+        var documents = TestData.Documents.LargeSet.ToRerankItems();
         var options = new RerankOptions { TopK = 10 };
 
         // Act
         var result = await reranker.RerankAsync(query, documents, options);
 
         // Assert
-        Assert.Equal(10, result.RankedDocuments.Count);
-        Assert.Equal(documents.Length, result.TotalDocuments);
+        Assert.Equal(10, result.Scores.Count);
+        Assert.Equal(TestData.Documents.LargeSet.Length, result.TotalItems);
     }
 
     [Fact]
@@ -192,13 +192,13 @@ public class RerankerIntegrationTests
         // Arrange
         var reranker = new MockReranker();
         var query = TestData.Queries.SearchQuery;
-        var documents = TestData.Documents.LargeSet;
+        var documents = TestData.Documents.LargeSet.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert
-        var scores = result.RankedDocuments.Select(d => d.Score).ToList();
+        var scores = result.Scores.Select(d => (double)d.Score).ToList();
         var avgScore = scores.Average();
         var minScore = scores.Min();
         var maxScore = scores.Max();
@@ -214,17 +214,17 @@ public class RerankerIntegrationTests
         // Arrange
         var reranker = new MockReranker();
         var query = "test";
-        var documents = new[] { "document 1", "document 2", "document 3" };
+        var documents = new[] { "document 1", "document 2", "document 3" }.ToRerankItems();
 
         // Act
         var result = await reranker.RerankAsync(query, documents);
 
         // Assert - each ranked document has required metadata
-        foreach (var doc in result.RankedDocuments)
+        foreach (var doc in result.Scores)
         {
-            Assert.NotNull(doc.Text);
+            Assert.NotNull(doc.Item.Text);
             Assert.True(doc.Rank > 0);
-            Assert.InRange(doc.Score, 0.0, 1.0);
+            Assert.InRange(doc.Score, 0.0f, 1.0f);
         }
     }
 }
