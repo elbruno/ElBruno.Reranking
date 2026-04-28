@@ -61,7 +61,9 @@ jobs:
       - name: NuGet login (OIDC → trusted publishing)
         uses: NuGet/login@v1
         with:
-          nuget-server-url: https://api.nuget.org/v3/index.json
+          user: __NUGET_USER__
+          token-service-url: https://www.nuget.org/api/v2/token
+          audience: https://www.nuget.org
 
       - name: Push to NuGet.org
         run: dotnet nuget push artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
