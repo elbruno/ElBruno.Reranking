@@ -1,0 +1,11 @@
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\bin\Debug\net8.0\ElBruno.Reranking.deps.json
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\bin\Debug\net8.0\ElBruno.Reranking.dll
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\bin\Debug\net8.0\ElBruno.Reranking.pdb
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.GeneratedMSBuildEditorConfig.editorconfig
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.AssemblyInfoInputs.cache
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.AssemblyInfo.cs
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.csproj.CoreCompileInputs.cache
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.dll
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\refint\ElBruno.Reranking.dll
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ElBruno.Reranking.pdb
+C:\src\ElBruno.Rerank\src\ElBruno.Reranking\obj\Debug\net8.0\ref\ElBruno.Reranking.dll

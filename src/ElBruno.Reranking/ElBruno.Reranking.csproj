@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    
+    <!-- NuGet Package Info -->
+    <PackageId>ElBruno.Reranking</PackageId>
+    <Version>0.5.0</Version>
+    <Title>ElBruno.Reranking</Title>
+    <Description>A .NET library for semantic reranking of search results using BGE and Claude backends</Description>
+    <Authors>Bruno Capuano</Authors>
+    <RepositoryUrl>https://github.com/elbruno/ElBruno.Reranking</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/elbruno/ElBruno.Reranking</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>reranking,semantic-search,bge,claude,ai</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Add backend dependencies as needed -->
+  </ItemGroup>
+
+</Project>
