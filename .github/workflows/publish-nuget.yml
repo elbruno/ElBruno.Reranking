@@ -61,7 +61,7 @@ jobs:
       - name: NuGet login (OIDC → trusted publishing)
         uses: NuGet/login@v1
         with:
-          user: __NUGET_USER__
+          user: elbruno
           token-service-url: https://www.nuget.org/api/v2/token
           audience: https://www.nuget.org
 

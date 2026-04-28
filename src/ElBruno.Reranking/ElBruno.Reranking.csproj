@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     
     <!-- NuGet Package Info -->
     <PackageId>ElBruno.Reranking</PackageId>
@@ -17,10 +18,31 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <PackageTags>reranking,semantic-search,bge,claude,ai</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- NuGet Package Icon -->
+    <PackageIcon>nuget-icon-128x128.png</PackageIcon>
+    <PackageIconUrl></PackageIconUrl>
   </PropertyGroup>
+  
+  <!-- Include icon in package -->
+  <ItemGroup>
+    <None Include="..\..\docs\images\nuget-icon-128x128.png" Pack="true" PackagePath=""/>
+  </ItemGroup>
 
   <ItemGroup>
-    <!-- Add backend dependencies as needed -->
+    <!-- ONNX Runtime for BGE backend -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.17.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Code analysis -->
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>
