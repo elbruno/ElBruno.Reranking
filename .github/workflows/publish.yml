@@ -58,15 +58,14 @@ jobs:
       - name: Pack
         run: dotnet pack src/ElBruno.Reranking/ElBruno.Reranking.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
-      - name: NuGet login (OIDC → trusted publishing)
+      - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
+        id: login
         with:
-          user: elbruno
-          token-service-url: https://www.nuget.org/api/v2/token
-          audience: https://www.nuget.org
+          user: ${{ secrets.NUGET_USER }}
 
       - name: Push to NuGet.org
-        run: dotnet nuget push artifacts/*.nupkg --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload NuGet package artifact
         uses: actions/upload-artifact@v4
