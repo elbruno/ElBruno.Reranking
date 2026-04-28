@@ -58,8 +58,13 @@ jobs:
       - name: Pack
         run: dotnet pack src/ElBruno.Reranking/ElBruno.Reranking.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
+      - name: NuGet login (OIDC → trusted publishing)
+        uses: NuGet/login@v1
+        with:
+          nuget-server-url: https://api.nuget.org/v3/index.json
+
       - name: Push to NuGet.org
-        run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload NuGet package artifact
         uses: actions/upload-artifact@v4
