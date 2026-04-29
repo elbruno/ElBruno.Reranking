@@ -9,7 +9,7 @@
     
     <!-- NuGet Package Info -->
     <PackageId>ElBruno.Reranking</PackageId>
-    <Version>0.5.0</Version>
+    <Version>0.5.1</Version>
     <Title>ElBruno.Reranking</Title>
     <Description>A .NET library for semantic reranking of search results using BGE and Claude backends</Description>
     <Authors>Bruno Capuano</Authors>
@@ -25,11 +25,14 @@
     <!-- NuGet Package Icon -->
     <PackageIcon>nuget-icon-128x128.png</PackageIcon>
     <PackageIconUrl></PackageIconUrl>
+    <!-- NuGet README -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   
-  <!-- Include icon in package -->
+  <!-- Include icon and README in package -->
   <ItemGroup>
     <None Include="..\..\docs\images\nuget-icon-128x128.png" Pack="true" PackagePath=""/>
+    <None Include="..\..\README.md" Pack="true" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
