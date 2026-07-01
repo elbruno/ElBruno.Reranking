@@ -244,13 +244,17 @@ We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 MIT License — see [LICENSE](LICENSE) for details.
 
-## Author
+## About Author
 
-**ElBruno** — AI/ML engineer passionate about semantic search and .NET
+**Bruno Garcia** — Cloud Solution Architect, AI enthusiast, and passionate open-source contributor.
 
-- 🌐 [elbruno.com](https://elbruno.com)
-- 🐦 [@elbruno](https://twitter.com/elbruno)
-- 💼 [LinkedIn](https://linkedin.com/in/elbruno)
+- 🌐 **Website:** [elbruno.com](https://elbruno.com)
+- 🐦 **Twitter:** [@elbruno](https://twitter.com/elbruno)
+- 📝 **Blog:** [ElBruno's Tech Blog](https://www.elbruno.com)
+- 🔗 **GitHub:** [@elbruno](https://github.com/elbruno)
+- 💼 **LinkedIn:** [LinkedIn Profile](https://linkedin.com/in/brunogarcia)
+
+Feel free to reach out for questions, suggestions, or collaboration opportunities!
 
 ## Acknowledgments
 
