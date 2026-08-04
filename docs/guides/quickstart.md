@@ -39,25 +39,25 @@ huggingface-cli download BAAI/bge-reranker-base --include "onnx/model.onnx" --lo
 ```csharp
 using ElBruno.Reranking;
 
-var documents = new[]
+var items = new[]
 {
-    "Machine learning enables computers to learn from data.",
-    "Deep learning uses artificial neural networks.",
-    "The weather today is rainy.",
-    "Natural language processing processes text.",
+    new RerankItem("Machine learning enables computers to learn from data."),
+    new RerankItem("Deep learning uses artificial neural networks."),
+    new RerankItem("The weather today is rainy."),
+    new RerankItem("Natural language processing processes text."),
 };
 
 var reranker = new OnnxReranker("./models/bge-reranker-base.onnx");
 
 var result = await reranker.RerankAsync(
     query: "What is machine learning?",
-    documents: documents
+    items: items
 );
 
 Console.WriteLine($"Backend: {reranker.Name}");
-Console.WriteLine($"Total documents: {result.TotalDocuments}");
-Console.WriteLine($"Top result: {result.RankedDocuments[0].Text}");
-Console.WriteLine($"Score: {result.RankedDocuments[0].Score:F3}");
+Console.WriteLine($"Total items: {result.TotalItems}");
+Console.WriteLine($"Top result: {result.Scores[0].Item.Text}");
+Console.WriteLine($"Score: {result.Scores[0].Score:F3}");
 ```
 
 **Run it:**
@@ -68,7 +68,7 @@ dotnet run
 **Expected output:**
 ```
 Backend: bge-reranker-base
-Total documents: 4
+Total items: 4
 Top result: Machine learning enables computers to learn from data.
 Score: 0.918
 ```
@@ -89,11 +89,11 @@ $env:ANTHROPIC_API_KEY="sk-ant-..."  # Windows PowerShell
 ```csharp
 using ElBruno.Reranking;
 
-var documents = new[]
+var items = new[]
 {
-    "Paris is the capital of France.",
-    "The Eiffel Tower is located in Paris.",
-    "Rome is the capital of Italy.",
+    new RerankItem("Paris is the capital of France."),
+    new RerankItem("The Eiffel Tower is located in Paris."),
+    new RerankItem("Rome is the capital of Italy."),
 };
 
 var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
@@ -103,14 +103,14 @@ var reranker = new ClaudeReranker(apiKey);
 
 var result = await reranker.RerankAsync(
     query: "What is the capital of France?",
-    documents: documents,
-    options: new RerankOptions { TopK = 2 }
+    items: items,
+    options: new RerankOptions { TopK = 2, IncludeExplanation = true }
 );
 
 Console.WriteLine($"Backend: {reranker.Name}");
-foreach (var doc in result.RankedDocuments)
+foreach (var score in result.Scores)
 {
-    Console.WriteLine($"Score: {doc.Score:F3}, Text: {doc.Text}");
+    Console.WriteLine($"Score: {score.Score:F3}, Text: {score.Item.Text}");
 }
 ```
 
@@ -128,20 +128,22 @@ Score: 0.87, Text: The Eiffel Tower is located in Paris.
 
 ## Step 3: Understand the Results
 
-Each reranked document includes:
+Each reranked item includes:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `Text` | string | Original document text |
+| `Item.Text` | string | Original item text |
 | `Score` | double | Relevance score [0.0–1.0] |
 | `Rank` | int | Position in ranked list (1-based) |
+| `Explanation` | string? | Optional explanation when enabled |
 
 ```csharp
-foreach (var doc in result.RankedDocuments)
+foreach (var score in result.Scores)
 {
-    Console.WriteLine($"Rank: {doc.Rank}");          // 1, 2, 3, ...
-    Console.WriteLine($"Score: {doc.Score}");        // 0.0–1.0
-    Console.WriteLine($"Text: {doc.Text}");          // Content
+    Console.WriteLine($"Rank: {score.Rank}");              // 1, 2, 3, ...
+    Console.WriteLine($"Score: {score.Score}");            // 0.0–1.0
+    Console.WriteLine($"Text: {score.Item.Text}");         // Content
+    Console.WriteLine($"Explanation: {score.Explanation}"); // Optional
 }
 ```
 
@@ -153,13 +155,17 @@ Use `RerankOptions` to customize behavior:
 var options = new RerankOptions
 {
     TopK = 5,                   // Return only top 5
-    MinScore = 0.7,             // Filter scores < 0.7
+    MinScore = 0.7f,            // Filter scores < 0.7
+    MaxItems = 100,             // Process up to 100 items
     TimeoutMs = 5000,           // 5 second timeout
-    EnableRetry = true,         // Retry transient errors
-    MaxRetries = 2              // Max 2 retry attempts
+    IncludeExplanation = true,  // Include explanations when available
+    CustomOptions = new Dictionary<string, string>
+    {
+        ["batch_size"] = "32"
+    }
 };
 
-var result = await reranker.RerankAsync(query, documents, options);
+var result = await reranker.RerankAsync(query, items, options);
 ```
 
 ## Step 5: Error Handling
@@ -167,7 +173,7 @@ var result = await reranker.RerankAsync(query, documents, options);
 ```csharp
 try
 {
-    var result = await reranker.RerankAsync(query, documents);
+    var result = await reranker.RerankAsync(query, items);
 }
 catch (ArgumentException ex)
 {
@@ -194,7 +200,7 @@ catch (Exception ex)
 
 ### "Query is empty"
 - Ensure query is not null or whitespace
-- Check documents array is not empty
+- Check items array is not empty
 
 ### Timeout errors
 - Increase `TimeoutMs` in `RerankOptions`
