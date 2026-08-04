@@ -483,7 +483,7 @@ catch (Exception ex)
 | Cost | ~$0.0008/call | Free | Free |
 | Privacy | ✗ Cloud | ✓ Local | ✓ Local |
 | Offline | ✗ No | ✓ Yes | ✓ Yes |
-| Explanations | ✗ No | ✗ No | Depends |
+| Explanations | ✓ Yes (when `RerankOptions.IncludeExplanation=true`) | ✗ No | Depends |
 
 ## Next Steps
 
