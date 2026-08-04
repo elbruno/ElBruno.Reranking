@@ -98,8 +98,6 @@ var options = new RerankOptions
     TopK = 10,                 // Return top 10 only (default: all)
     MinScore = 0.7f,           // Filter score >= 0.7 (default: 0.0)
     MaxItems = 1000,           // Limit the number of items processed
-    TimeoutMs = 30000,         // 30 second timeout (default: 30000)
-    IncludeExplanation = false, // ONNX doesn't populate explanations
     CustomOptions = new Dictionary<string, string>()
 };
 
@@ -232,10 +230,10 @@ Console.WriteLine("All queries reranked!");
 - Recommended: <1,000 items for best latency
 
 ```csharp
-if (items.Count > 10000)
+if (items.Length > 10000)
 {
     // Batch into multiple calls
-    for (int i = 0; i < items.Count; i += 5000)
+    for (int i = 0; i < items.Length; i += 5000)
     {
         var batch = items.Skip(i).Take(5000);
         var result = await reranker.RerankAsync(query, batch);

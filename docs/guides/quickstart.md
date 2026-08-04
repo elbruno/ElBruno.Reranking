@@ -38,6 +38,7 @@ huggingface-cli download BAAI/bge-reranker-base --include "onnx/model.onnx" --lo
 
 ```csharp
 using ElBruno.Reranking;
+using ElBruno.Reranking.Backends.ONNX;
 
 var items = new[]
 {
@@ -88,6 +89,7 @@ $env:ANTHROPIC_API_KEY="sk-ant-..."  # Windows PowerShell
 
 ```csharp
 using ElBruno.Reranking;
+using ElBruno.Reranking.Backends.Claude;
 
 var items = new[]
 {
@@ -99,12 +101,16 @@ var items = new[]
 var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
     ?? throw new InvalidOperationException("ANTHROPIC_API_KEY not set");
 
-var reranker = new ClaudeReranker(apiKey);
+var reranker = new ClaudeReranker(new ClaudeOptions
+{
+    ApiKey = apiKey,
+    TimeoutMs = 5000
+});
 
 var result = await reranker.RerankAsync(
     query: "What is the capital of France?",
     items: items,
-    options: new RerankOptions { TopK = 2, IncludeExplanation = true }
+    options: new RerankOptions { TopK = 2 }
 );
 
 Console.WriteLine($"Backend: {reranker.Name}");
@@ -135,7 +141,7 @@ Each reranked item includes:
 | `Item.Text` | string | Original item text |
 | `Score` | double | Relevance score [0.0–1.0] |
 | `Rank` | int | Position in ranked list (1-based) |
-| `Explanation` | string? | Optional explanation when enabled |
+| `Explanation` | string? | Currently not populated by the built-in backends |
 
 ```csharp
 foreach (var score in result.Scores)
@@ -143,7 +149,7 @@ foreach (var score in result.Scores)
     Console.WriteLine($"Rank: {score.Rank}");              // 1, 2, 3, ...
     Console.WriteLine($"Score: {score.Score}");            // 0.0–1.0
     Console.WriteLine($"Text: {score.Item.Text}");         // Content
-    Console.WriteLine($"Explanation: {score.Explanation}"); // Optional
+    Console.WriteLine($"Explanation: {score.Explanation ?? "(none)"}"); // Not populated by built-in backends
 }
 ```
 
@@ -157,8 +163,6 @@ var options = new RerankOptions
     TopK = 5,                   // Return only top 5
     MinScore = 0.7f,            // Filter scores < 0.7
     MaxItems = 100,             // Process up to 100 items
-    TimeoutMs = 5000,           // 5 second timeout
-    IncludeExplanation = true,  // Include explanations when available
     CustomOptions = new Dictionary<string, string>
     {
         ["batch_size"] = "32"
@@ -167,6 +171,8 @@ var options = new RerankOptions
 
 var result = await reranker.RerankAsync(query, items, options);
 ```
+
+For Claude request timeouts, set `TimeoutMs` on `ClaudeOptions` when constructing `ClaudeReranker`.
 
 ## Step 5: Error Handling
 
@@ -203,7 +209,7 @@ catch (Exception ex)
 - Check items array is not empty
 
 ### Timeout errors
-- Increase `TimeoutMs` in `RerankOptions`
+- Increase `TimeoutMs` on `ClaudeOptions` when constructing `ClaudeReranker`
 - Check network connectivity (Claude backend)
 - Check ONNX model file size is reasonable
 

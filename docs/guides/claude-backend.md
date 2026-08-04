@@ -7,7 +7,6 @@
 The Claude backend leverages Claude's reasoning capabilities for intelligent reranking. It's ideal for scenarios requiring:
 
 - 🧠 **Precision** — 98%+ R@5 on semantic relevance
-- 📝 **Explanations** — Understand why items are ranked
 - 🤔 **Complex reasoning** — Handle nuanced queries
 - 🔄 **Semantic understanding** — Capture intent beyond keywords
 
@@ -25,7 +24,6 @@ The Claude backend leverages Claude's reasoning capabilities for intelligent rer
 ✅ **Use Claude if you need:**
 - Highest accuracy (98%+ R@5)
 - Complex semantic reasoning
-- Ranking explanations
 - Nuanced query understanding
 - Handling ambiguous or complex queries
 
@@ -99,8 +97,6 @@ var options = new RerankOptions
     TopK = 10,                      // Return top 10 only (default: all)
     MinScore = 0.7f,                // Filter score >= 0.7 (default: 0.0)
     MaxItems = 100,                 // Limit the number of items processed
-    TimeoutMs = 60000,              // 60 second timeout (default: 30000)
-    IncludeExplanation = true,      // Include per-item explanations when supported
     CustomOptions = new Dictionary<string, string>()
 };
 
@@ -139,10 +135,18 @@ foreach (var score in result.Scores)
 4. 0.38 — Rome is the capital of Italy.
 ```
 
-### With Explanations
+### Configure Request Timeout
 
 ```csharp
-var options = new RerankOptions { TopK = 3, IncludeExplanation = true };
+var claudeOptions = new ClaudeOptions
+{
+    ApiKey = apiKey,
+    TimeoutMs = 90000,  // 90 seconds
+};
+
+var reranker = new ClaudeReranker(claudeOptions);
+
+var options = new RerankOptions { TopK = 3 };
 
 var result = await reranker.RerankAsync(
     query: "best programming language for web development",
@@ -159,7 +163,6 @@ foreach (var score in result.Scores)
 {
     Console.WriteLine($"Score: {score.Score:F3}");
     Console.WriteLine($"Text: {score.Item.Text}");
-    Console.WriteLine($"Explanation: {score.Explanation}");
     Console.WriteLine();
 }
 ```
@@ -169,10 +172,16 @@ foreach (var score in result.Scores)
 ```csharp
 var options = new RerankOptions
 {
-    TimeoutMs = 90000,  // 90 seconds
-    IncludeExplanation = false,
     CustomOptions = new Dictionary<string, string>()
 };
+
+var claudeOptions = new ClaudeOptions
+{
+    ApiKey = apiKey,
+    TimeoutMs = 90000,  // 90 seconds
+};
+
+var reranker = new ClaudeReranker(claudeOptions);
 
 try
 {
@@ -252,7 +261,7 @@ Scenario: 100 search queries/day, 50 items/query
 
 ```csharp
 // Batch large result sets
-if (items.Count > 500)
+if (items.Length > 500)
 {
     var batches = items
         .Chunk(100)  // .NET 6+
@@ -282,9 +291,17 @@ if (items.Count > 500)
 ### Custom Timeouts
 
 ```csharp
+var claudeOptions = new ClaudeOptions
+{
+    ApiKey = apiKey,
+    TimeoutMs = 120000  // 2 minute timeout for very large batches
+};
+
+var reranker = new ClaudeReranker(claudeOptions);
+
 var options = new RerankOptions
 {
-    TimeoutMs = 120000  // 2 minute timeout for very large batches
+    TopK = 10
 };
 
 var result = await reranker.RerankAsync(query, items, options);
@@ -448,7 +465,7 @@ catch (Exception ex)
 | Cost | ~$0.0008/call | Free | Free |
 | Privacy | ✗ Cloud | ✓ Local | ✓ Local |
 | Offline | ✗ No | ✓ Yes | ✓ Yes |
-| Explanations | ✓ Yes | ✗ No | Depends |
+| Explanations | ✗ No | ✗ No | Depends |
 
 ## Next Steps
 
