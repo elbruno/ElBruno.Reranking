@@ -6,7 +6,7 @@ using System.Text.Json;
 /// <summary>
 /// HTTP client for Claude API integration.
 /// </summary>
-internal class ClaudeApiClient : IDisposable
+internal class ClaudeApiClient : IClaudeApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly ClaudeOptions _options;
@@ -32,15 +32,17 @@ internal class ClaudeApiClient : IDisposable
     /// </summary>
     /// <param name="query">Search query</param>
     /// <param name="items">Items to rerank</param>
+    /// <param name="includeExplanation">Whether explanations are requested</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Scores for each item in order</returns>
-    public async Task<float[]> RankAsync(
+    public async Task<IReadOnlyList<ClaudeScoreResult>> RankAsync(
         string query,
         IEnumerable<RerankItem> items,
+        bool includeExplanation,
         CancellationToken cancellationToken)
     {
         var itemsList = items.ToList();
-        var prompt = _promptBuilder.BuildPrompt(query, itemsList, false);
+        var prompt = _promptBuilder.BuildPrompt(query, itemsList, includeExplanation);
 
         var attempt = 0;
         int backoffMs = _options.InitialBackoffMs;
@@ -50,7 +52,7 @@ internal class ClaudeApiClient : IDisposable
             try
             {
                 var response = await CallApiAsync(prompt, cancellationToken);
-                return _promptBuilder.ParseResponse(response, itemsList.Count);
+                return _promptBuilder.ParseResponse(response, itemsList.Count, includeExplanation);
             }
             catch (HttpRequestException ex) when (ShouldRetry(ex) && attempt < _options.MaxRetries)
             {

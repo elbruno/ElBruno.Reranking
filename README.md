@@ -58,6 +58,7 @@ Install-Package ElBruno.Reranking
 
 ```csharp
 using ElBruno.Reranking;
+using ElBruno.Reranking.Backends.ONNX;
 
 // Documents to rerank
 var items = new[]
@@ -97,6 +98,7 @@ Score: 0.142, Text: The weather is sunny today.
 
 ```csharp
 using ElBruno.Reranking;
+using ElBruno.Reranking.Backends.Claude;
 
 var items = new[]
 {
