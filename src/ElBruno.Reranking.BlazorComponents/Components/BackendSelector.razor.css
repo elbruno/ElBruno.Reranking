@@ -1,0 +1,38 @@
+.backend-selector {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.backend-selector__option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 0.9rem;
+    background: white;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.backend-selector__option:hover {
+    transform: translateY(-1px);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.backend-selector__option--selected {
+    border-color: rgba(59, 130, 246, 0.9);
+    background: rgba(59, 130, 246, 0.06);
+}
+
+.backend-selector__name {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.backend-selector__latency {
+    font-size: 0.85rem;
+    color: #475569;
+}

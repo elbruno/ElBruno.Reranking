@@ -43,18 +43,26 @@ jobs:
           echo "📦 Publishing version: $VERSION"
 
       - name: Restore
-        run: dotnet restore src/ElBruno.Reranking.Tests/ElBruno.Reranking.Tests.csproj
+        run: |
+          dotnet restore src/ElBruno.Reranking.Tests/ElBruno.Reranking.Tests.csproj
+          dotnet restore src/ElBruno.Reranking.BlazorComponents.Tests/ElBruno.Reranking.BlazorComponents.Tests.csproj
 
       - name: Build
         run: |
           dotnet build src/ElBruno.Reranking/ElBruno.Reranking.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.Reranking.BlazorComponents/ElBruno.Reranking.BlazorComponents.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.Reranking.Tests/ElBruno.Reranking.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.Reranking.BlazorComponents.Tests/ElBruno.Reranking.BlazorComponents.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
-        run: dotnet test src/ElBruno.Reranking.Tests/ElBruno.Reranking.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
+        run: |
+          dotnet test src/ElBruno.Reranking.Tests/ElBruno.Reranking.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
+          dotnet test src/ElBruno.Reranking.BlazorComponents.Tests/ElBruno.Reranking.BlazorComponents.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
 
       - name: Pack
         run: dotnet pack src/ElBruno.Reranking/ElBruno.Reranking.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
+      - name: Pack Blazor Components
+        run: dotnet pack src/ElBruno.Reranking.BlazorComponents/ElBruno.Reranking.BlazorComponents.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1

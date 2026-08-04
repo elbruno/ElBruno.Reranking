@@ -1,0 +1,46 @@
+@inject RerankingStateService State
+@implements IDisposable
+
+<div class="backend-selector" data-testid="backend-selector">
+    @foreach (var backend in State.AvailableBackends)
+    {
+        var isSelected = backend.Backend == State.SelectedBackend;
+
+        <button type="button"
+                class="backend-selector__option @(isSelected ? "backend-selector__option--selected" : string.Empty)"
+                data-testid="backend-option-@backend.Backend"
+                aria-pressed="@isSelected"
+                @onclick="() => SelectBackend(backend.Backend)">
+            <span class="backend-selector__name">@backend.DisplayName</span>
+
+            @if (ShowLatencyHint)
+            {
+                <span class="backend-selector__latency">@backend.LatencyHint</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<RerankerBackendType> OnBackendChanged { get; set; }
+
+    [Parameter] public bool ShowLatencyHint { get; set; } = true;
+
+    protected override void OnInitialized()
+    {
+        State.OnStateChanged += HandleStateChanged;
+    }
+
+    public void Dispose()
+    {
+        State.OnStateChanged -= HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task SelectBackend(RerankerBackendType backend)
+    {
+        State.SetSelectedBackend(backend);
+        await OnBackendChanged.InvokeAsync(backend);
+    }
+}

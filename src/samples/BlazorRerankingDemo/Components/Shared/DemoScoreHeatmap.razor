@@ -1,0 +1,70 @@
+@using System.Globalization
+
+@if (Result is null)
+{
+    <div class="alert alert-info mb-0">
+        Rerank results will appear here as a score heatmap.
+    </div>
+}
+else
+{
+    var orderedScores = SortByScore
+        ? Result.Scores.OrderByDescending(score => score.Score).ToArray()
+        : Result.Scores.ToArray();
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-body-tertiary d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="fw-semibold">Score heatmap</div>
+            <span class="badge text-bg-dark text-nowrap">Sorted: @(SortByScore ? "score" : "original order")</span>
+        </div>
+
+        <div class="card-body">
+            @foreach (var score in orderedScores)
+            {
+                <div class="mb-3">
+                    @if (ShowLabels)
+                    {
+                        <div class="d-flex justify-content-between gap-2 small mb-1">
+                            <span class="fw-semibold text-truncate">@score.Item.Text</span>
+                            <span class="text-body-secondary">@score.Score.ToString("0.000", CultureInfo.InvariantCulture)</span>
+                        </div>
+                    }
+
+                    <div class="progress heatmap-progress" role="progressbar" aria-valuenow="@score.Score" aria-valuemin="0" aria-valuemax="1">
+                        <div class="progress-bar heatmap-bar"
+                             style="width:@GetWidth(score.Score); background-color:@GetColor(score.Score)">
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RerankResult? Result { get; set; }
+
+    [Parameter]
+    public bool SortByScore { get; set; } = true;
+
+    [Parameter]
+    public bool ShowLabels { get; set; } = true;
+
+    private static string GetWidth(float score)
+        => $"{Math.Clamp(score * 100f, 8f, 100f):0.#}%";
+
+    private static string GetColor(float score)
+    {
+        var clamped = Math.Clamp(score, 0f, 1f);
+
+        var start = (red: 173, green: 181, blue: 189);
+        var end = (red: 13, green: 110, blue: 253);
+
+        var red = (int)Math.Round(start.red + (end.red - start.red) * clamped);
+        var green = (int)Math.Round(start.green + (end.green - start.green) * clamped);
+        var blue = (int)Math.Round(start.blue + (end.blue - start.blue) * clamped);
+
+        return $"rgb({red}, {green}, {blue})";
+    }
+}

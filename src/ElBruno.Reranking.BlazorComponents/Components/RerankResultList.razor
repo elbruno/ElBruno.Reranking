@@ -1,0 +1,97 @@
+@if (Results is null || Results.Count == 0)
+{
+    <p data-testid="rerank-result-empty">No rerank results yet.</p>
+}
+else
+{
+    <div class="rerank-result-list" data-testid="rerank-result-list">
+        @foreach (var result in Results)
+        {
+            <section class="rerank-result-list__result" data-testid="rerank-result">
+                <header class="rerank-result-list__header">
+                    <strong>@result.BackendName</strong>
+                    <span>@result.Query</span>
+                </header>
+
+                <ol class="rerank-result-list__items">
+                    @foreach (var score in result.Scores)
+                    {
+                        var originalRank = GetOriginalRank(score);
+                        int? delta = originalRank is null ? null : originalRank.Value - score.Rank;
+
+                        <li class="rerank-result-list__item rerank-result-list__item--@GetSeverityClass(score.Score)"
+                            data-testid="rerank-result-item">
+                            @if (ShowScoreBadge)
+                            {
+                                <span class="rerank-result-list__score" data-testid="score-badge">@score.Score.ToString("0.00")</span>
+                            }
+
+                            @if (ShowOriginalRank)
+                            {
+                                <span class="rerank-result-list__rank" data-testid="current-rank">#@score.Rank</span>
+                                <span class="rerank-result-list__delta" data-testid="rank-delta">
+                                    @GetDeltaLabel(delta)
+                                </span>
+                            }
+
+                            <span class="rerank-result-list__text">@score.Item.Text</span>
+                            <div class="rerank-result-list__bar" style="width: @(Math.Clamp(score.Score, 0f, 1f) * 100f)%"></div>
+                        </li>
+                    }
+                </ol>
+            </section>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<RerankResult>? Results { get; set; }
+
+    [Parameter] public bool ShowOriginalRank { get; set; } = true;
+
+    [Parameter] public bool ShowScoreBadge { get; set; } = true;
+
+    private static int? GetOriginalRank(RerankScore score)
+    {
+        if (score.Item.Metadata is null)
+        {
+            return null;
+        }
+
+        foreach (var key in new[] { "OriginalRank", "originalRank", "original_rank", "sourceRank", "source_rank" })
+        {
+            if (score.Item.Metadata.TryGetValue(key, out var originalRank) &&
+                TryConvertToInt(originalRank, out var converted))
+            {
+                return converted;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryConvertToInt(object? value, out int converted)
+    {
+        switch (value)
+        {
+            case int intValue:
+                converted = intValue;
+                return true;
+            case long longValue:
+                converted = (int)longValue;
+                return true;
+            case string stringValue when int.TryParse(stringValue, out var parsed):
+                converted = parsed;
+                return true;
+            default:
+                converted = default;
+                return false;
+        }
+    }
+
+    private static string GetDeltaLabel(int? delta)
+        => delta is null ? "n/a" : delta > 0 ? $"+{delta}" : delta.Value.ToString();
+
+    private static string GetSeverityClass(float score)
+        => score >= 0.75f ? "high" : score >= 0.4f ? "medium" : "low";
+}

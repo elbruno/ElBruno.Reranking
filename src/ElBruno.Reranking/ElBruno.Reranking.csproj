@@ -9,7 +9,7 @@
     
     <!-- NuGet Package Info -->
     <PackageId>ElBruno.Reranking</PackageId>
-    <Version>0.5.1</Version>
+    <Version>0.6.0</Version>
     <Title>ElBruno.Reranking</Title>
     <Description>A .NET library for semantic reranking of search results using BGE and Claude backends</Description>
     <Authors>Bruno Capuano</Authors>

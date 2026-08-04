@@ -1,0 +1,141 @@
+@using System.Globalization
+
+@if (Result is null)
+{
+    <div class="alert alert-info mb-0">
+        Run a rerank to see the ordered results.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-body-tertiary d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <div class="fw-semibold">Ordered candidates</div>
+                <div class="small text-body-secondary">@Result.BackendName • @Result.ElapsedMilliseconds.ToString("0", CultureInfo.InvariantCulture) ms • @Result.TotalItems item(s)</div>
+            </div>
+
+            <span class="badge text-bg-dark text-nowrap">@Result.Query</span>
+        </div>
+
+        <ul class="list-group list-group-flush">
+            @foreach (var score in Result.Scores)
+            {
+                var originalRank = GetOriginalRank(score);
+                var delta = originalRank.HasValue ? originalRank.Value - score.Rank : (int?)null;
+                var tags = GetTags(score);
+
+                <li class="list-group-item">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge rounded-pill text-bg-primary">#@score.Rank</span>
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                @if (ShowOriginalRank && originalRank.HasValue)
+                                {
+                                    <span class="badge text-bg-secondary">original #@originalRank</span>
+                                    <span class="@GetDeltaClass(delta)">
+                                        @GetDeltaLabel(delta)
+                                    </span>
+                                }
+
+                                @if (ShowScoreBadge)
+                                {
+                                    <span class="badge text-bg-success">@score.Score.ToString("0.000", CultureInfo.InvariantCulture)</span>
+                                }
+                            </div>
+
+                            <div class="fw-semibold">@score.Item.Text</div>
+
+                            @if (!string.IsNullOrWhiteSpace(GetSource(score)))
+                            {
+                                <div class="small text-body-secondary mt-1">Source: @GetSource(score)</div>
+                            }
+
+                            @if (tags.Count > 0)
+                            {
+                                <div class="d-flex flex-wrap gap-1 mt-2">
+                                    @foreach (var tag in tags)
+                                    {
+                                        <span class="badge rounded-pill text-bg-light border">@tag</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RerankResult? Result { get; set; }
+
+    [Parameter]
+    public bool ShowOriginalRank { get; set; } = true;
+
+    [Parameter]
+    public bool ShowScoreBadge { get; set; } = true;
+
+    private static int? GetOriginalRank(RerankScore score)
+    {
+        if (score.Item.Metadata is null || !score.Item.Metadata.TryGetValue("originalRank", out var originalRank))
+        {
+            return null;
+        }
+
+        return originalRank switch
+        {
+            int intValue => intValue,
+            long longValue => (int)longValue,
+            string stringValue when int.TryParse(stringValue, out var parsed) => parsed,
+            _ => null,
+        };
+    }
+
+    private static string? GetSource(RerankScore score)
+    {
+        if (score.Item.Metadata is null || !score.Item.Metadata.TryGetValue("source", out var source))
+        {
+            return null;
+        }
+
+        return source?.ToString();
+    }
+
+    private static IReadOnlyList<string> GetTags(RerankScore score)
+    {
+        if (score.Item.Metadata is null || !score.Item.Metadata.TryGetValue("tags", out var tags) || tags is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        return tags switch
+        {
+            string tag => new[] { tag },
+            IEnumerable<string> stringTags => stringTags.ToArray(),
+            IEnumerable<object> objectTags => objectTags.Select(tag => tag?.ToString()).Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag!).ToArray(),
+            _ => Array.Empty<string>(),
+        };
+    }
+
+    private static string GetDeltaClass(int? delta)
+        => delta switch
+        {
+            > 0 => "badge text-bg-success",
+            < 0 => "badge text-bg-danger",
+            _ => "badge text-bg-secondary",
+        };
+
+    private static string GetDeltaLabel(int? delta)
+        => delta switch
+        {
+            > 0 => $"▲ +{delta}",
+            < 0 => $"▼ {delta}",
+            _ => "■ 0",
+        };
+}

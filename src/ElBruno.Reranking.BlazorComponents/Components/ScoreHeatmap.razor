@@ -1,0 +1,111 @@
+@if (!Entries.Any())
+{
+    <p data-testid="heatmap-empty">No scores to display.</p>
+}
+else
+{
+    <div class="score-heatmap" data-testid="score-heatmap">
+        @foreach (var entry in Entries)
+        {
+            <div class="score-heatmap__row" data-testid="heatmap-row">
+                @if (ShowLabels)
+                {
+                    <span class="score-heatmap__label">@entry.Item.Text</span>
+                }
+
+                <div class="score-heatmap__track">
+                    <div class="score-heatmap__bar"
+                         style="@GetBarStyle(entry.Score)"
+                         aria-valuenow="@entry.Score"
+                         aria-valuemin="0"
+                         aria-valuemax="1"></div>
+                </div>
+
+                @if (ShowLabels)
+                {
+                    <span class="score-heatmap__score">@entry.Score.ToString("0.00")</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<RerankResult>? Results { get; set; }
+
+    [Parameter] public bool SortByScore { get; set; }
+
+    [Parameter] public bool ShowLabels { get; set; } = true;
+
+    private IEnumerable<RerankScore> Entries =>
+        SortByScore
+            ? GetEntries().OrderByDescending(x => x.Score).ThenBy(x => x.Rank)
+            : HasOriginalRanks()
+                ? GetEntries().OrderBy(x => GetOriginalRank(x) ?? x.Rank)
+                : GetEntries();
+
+    private IEnumerable<RerankScore> GetEntries()
+        => Results?.SelectMany(x => x.Scores) ?? Enumerable.Empty<RerankScore>();
+
+    private bool HasOriginalRanks()
+        => GetEntries().Any(score => GetOriginalRank(score).HasValue);
+
+    private static int? GetOriginalRank(RerankScore score)
+    {
+        if (score.Item.Metadata is null)
+        {
+            return null;
+        }
+
+        foreach (var key in new[] { "OriginalRank", "originalRank", "original_rank", "sourceRank", "source_rank" })
+        {
+            if (score.Item.Metadata.TryGetValue(key, out var originalRank) &&
+                TryConvertToInt(originalRank, out var converted))
+            {
+                return converted;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryConvertToInt(object? value, out int converted)
+    {
+        switch (value)
+        {
+            case int intValue:
+                converted = intValue;
+                return true;
+            case long longValue:
+                converted = (int)longValue;
+                return true;
+            case string stringValue when int.TryParse(stringValue, out var parsed):
+                converted = parsed;
+                return true;
+            default:
+                converted = default;
+                return false;
+        }
+    }
+
+    private static string GetBarStyle(float score)
+    {
+        var percentage = Math.Clamp(score, 0f, 1f) * 100;
+        var background = InterpolateColor(score);
+        return $"width: {percentage:0.##}%; background-color: {background};";
+    }
+
+    private static string InterpolateColor(float score)
+    {
+        var clamped = Math.Clamp(score, 0f, 1f);
+
+        var start = (R: 148, G: 163, B: 184); // slate-400
+        var end = (R: 37, G: 99, B: 235);      // blue-600
+
+        var red = (int)Math.Round(start.R + (end.R - start.R) * clamped);
+        var green = (int)Math.Round(start.G + (end.G - start.G) * clamped);
+        var blue = (int)Math.Round(start.B + (end.B - start.B) * clamped);
+
+        return $"rgb({red}, {green}, {blue})";
+    }
+}

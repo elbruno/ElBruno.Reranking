@@ -1,0 +1,19 @@
+.rerank-playground {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.03), rgba(15, 23, 42, 0.01));
+}
+
+.rerank-playground__backend {
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+.rerank-playground__validation {
+    margin: 0;
+    color: #b91c1c;
+    font-size: 0.9rem;
+}

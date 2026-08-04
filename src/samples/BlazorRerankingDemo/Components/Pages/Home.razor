@@ -1,0 +1,91 @@
+﻿@page "/"
+@using BlazorRerankingDemo.Components.Shared
+
+<PageTitle>Blazor Reranking Demo</PageTitle>
+
+<div class="hero-surface p-4 p-lg-5 mb-4 rounded-4 shadow-sm">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+            <span class="badge text-bg-primary mb-3">Deterministic sample</span>
+            <h1 class="display-6 mb-3">BlazorRerankingDemo</h1>
+            <p class="lead mb-0">
+                A Blazor Server sample that previews the proposed reranking UI components with Bootstrap 5.3.x styling and fixed demo data.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div class="text-body-secondary small">Default backend</div>
+            <div class="fs-4 fw-semibold">@DemoCatalog.Backends[0].DisplayName</div>
+            <div class="small text-body-secondary">@DemoCatalog.Backends[0].Description</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    @foreach (var card in _cards)
+    {
+        <div class="col-md-6 col-xl-3">
+            <a class="card h-100 shadow-sm text-decoration-none text-reset" href="@card.Href">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                        <h2 class="h5 mb-0">@card.Title</h2>
+                        <span class="badge text-bg-light border">@card.Badge</span>
+                    </div>
+
+                    <p class="mb-0 text-body-secondary">@card.Description</p>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-6">
+        <CodeSnippets Title="Sample highlights" Items="@_snippets" />
+    </div>
+
+    <div class="col-lg-6">
+        <CodeSample Title="Run the sample" Language="bash" Description="Build and launch the demo locally." Code="@_runCommand" />
+    </div>
+</div>
+
+<div class="mt-5">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <h2 class="h4 mb-0">Live library preview</h2>
+        <span class="badge text-bg-success">Deterministic</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <BackendSelector ShowLatencyHint="true" />
+        </div>
+
+        <div class="col-lg-8">
+            <RerankPlayground DefaultQuery="@DemoCatalog.DefaultQuery"
+                              DefaultCandidates="@DemoCatalog.DefaultCandidateText"
+                              ShowExportButton="true" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private static readonly IReadOnlyList<NavigationCard> _cards = new[]
+    {
+        new NavigationCard("BackendSelector", "Choose between BGE-ONNX, Claude API, and Ollama with latency hints.", "/backend-selector", "4.1"),
+        new NavigationCard("RerankResultList", "Inspect scores, original rank, and rank deltas in a compact list.", "/rerank-result-list", "4.2"),
+        new NavigationCard("ScoreHeatmap", "See relevance gradients as a color-coded horizontal heatmap.", "/score-heatmap", "4.3"),
+        new NavigationCard("RerankPlayground", "Edit the query and candidates, then export the deterministic JSON payload.", "/rerank-playground", "4.4"),
+    };
+
+    private static readonly IReadOnlyList<CodeSnippet> _snippets = new[]
+    {
+        new CodeSnippet("Bootstrap", "The sample uses Bootstrap 5.3.x from a CDN so the layout stays consistent.", "5.3.3"),
+        new CodeSnippet("Deterministic data", "Each page uses the same seeded candidate set and scoring rules.", "Stable"),
+        new CodeSnippet("Current library types", "The sample renders ElBruno.Reranking models through the component package.", "RerankItem/RerankResult"),
+        new CodeSnippet("Navigation", "Each component has its own route for easy screenshot capture.", "4 pages"),
+    };
+
+    private static readonly string _runCommand = "dotnet run --project src/samples/BlazorRerankingDemo/BlazorRerankingDemo.csproj";
+
+    private sealed record NavigationCard(string Title, string Description, string Href, string Badge);
+}

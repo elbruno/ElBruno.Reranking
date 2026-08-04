@@ -23,10 +23,28 @@ ElBruno.Reranking improves search result relevance through intelligent semantic 
 🔄 **Async/await throughout** — Built for high-concurrency .NET applications  
 🛠️ **Production-ready** — Error handling, retry logic, timeouts  
 
+## Packages & features
+
+- **[ElBruno.Reranking](https://www.nuget.org/packages/ElBruno.Reranking/)** — core semantic reranking package
+- **[ElBruno.Reranking.BlazorComponents](src/ElBruno.Reranking.BlazorComponents/README.md)** — component package README
+- **[Blazor components guide](docs/blazor-components.md)** — component map and UI notes
+- **[BlazorRerankingDemo](src/samples/BlazorRerankingDemo/README.md)** — deterministic Blazor sample app
+- **[Quickstart guide](docs/guides/quickstart.md)** — setup and backend selection
+- **[Performance tuning](docs/guides/performance-tuning.md)** — practical optimization tips
+
+## What's New
+
+- Added a Blazor component sample app for the reranking UI experience
+- Documented the planned component surface in `docs/blazor-components.md`
+- Added `CodeSample` and `CodeSnippets` helpers for repeatable doc blocks
+- Standardized the sample on Bootstrap 5.3.3 and deterministic demo data
+- Added a release instruction reminding NuGet publishes to review this section
+
 ## Installation
 
 ```bash
 dotnet add package ElBruno.Reranking
+dotnet add package ElBruno.Reranking.BlazorComponents
 ```
 
 Or via NuGet Package Manager:
@@ -103,6 +121,16 @@ foreach (var score in result.Scores)
 }
 ```
 
+### Blazor Components
+
+```csharp
+using ElBruno.Reranking.BlazorComponents.Extensions;
+
+builder.Services.AddRerankingBlazorComponents();
+```
+
+Use `BackendSelector`, `RerankResultList`, `ScoreHeatmap`, and `RerankPlayground` to build a reranking UI quickly.
+
 ## Documentation
 
 - **[Quickstart Guide](docs/guides/quickstart.md)** — Step-by-step setup for all backends
@@ -111,6 +139,8 @@ foreach (var score in result.Scores)
 - **[Custom Reranker Guide](docs/guides/custom-reranker.md)** — Extend with your own backend
 - **[Performance Tuning Guide](docs/guides/performance-tuning.md)** — Optimize for your workload
 - **[Architecture Deep-Dive](docs/architecture.md)** — System design and abstractions
+- **[Blazor Components Guide](docs/blazor-components.md)** — UI component map and sample references
+- **[Blazor Components Package](src/ElBruno.Reranking.BlazorComponents/README.md)** — package README and public surface
 - **[Performance Benchmarks](docs/benchmarks.md)** — Real-world latency and throughput
 - **[Cost Estimation](docs/cost-estimation.md)** — BGE vs Claude cost analysis
 - **[Roadmap](docs/roadmap.md)** — Future backends and features
