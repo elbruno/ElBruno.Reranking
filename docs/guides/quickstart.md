@@ -104,6 +104,7 @@ var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
 var reranker = new ClaudeReranker(new ClaudeOptions
 {
     ApiKey = apiKey,
+    Model = "3-opus",
     TimeoutMs = 5000
 });
 
@@ -141,7 +142,7 @@ Each reranked item includes:
 | `Item.Text` | string | Original item text |
 | `Score` | double | Relevance score [0.0–1.0] |
 | `Rank` | int | Position in ranked list (1-based) |
-| `Explanation` | string? | Currently not populated by the built-in backends |
+| `Explanation` | string? | Populated by Claude when `RerankOptions.IncludeExplanation = true` |
 
 ```csharp
 foreach (var score in result.Scores)
@@ -149,7 +150,7 @@ foreach (var score in result.Scores)
     Console.WriteLine($"Rank: {score.Rank}");              // 1, 2, 3, ...
     Console.WriteLine($"Score: {score.Score}");            // 0.0–1.0
     Console.WriteLine($"Text: {score.Item.Text}");         // Content
-    Console.WriteLine($"Explanation: {score.Explanation ?? "(none)"}"); // Not populated by built-in backends
+    Console.WriteLine($"Explanation: {score.Explanation ?? "(none)"}"); // Set IncludeExplanation=true to populate
 }
 ```
 

@@ -59,6 +59,7 @@ set ANTHROPIC_API_KEY=sk-ant-...
 
 ```csharp
 using ElBruno.Reranking;
+using ElBruno.Reranking.Backends.Claude;
 
 var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
     ?? throw new InvalidOperationException("ANTHROPIC_API_KEY not set");
@@ -88,6 +89,23 @@ Task<RerankResult> RerankAsync(
 - `cancellationToken` — For cancellation support
 
 **Returns:** `RerankResult` with `Scores` sorted by score (descending) and `TotalItems`
+
+### Include Explanations
+
+Claude can populate per-item explanations when requested:
+
+```csharp
+var options = new RerankOptions
+{
+    IncludeExplanation = true
+};
+
+var result = await reranker.RerankAsync(query, items, options);
+
+Console.WriteLine(result.Scores[0].Explanation);
+```
+
+Set `IncludeExplanation = true` to include explanations in Claude responses. Leave it off for the default, faster path.
 
 ### RerankOptions
 
