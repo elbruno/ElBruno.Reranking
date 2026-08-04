@@ -104,7 +104,7 @@ var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
 var reranker = new ClaudeReranker(new ClaudeOptions
 {
     ApiKey = apiKey,
-    Model = "3-opus",
+    Model = "claude-3-opus",
     TimeoutMs = 5000
 });
 

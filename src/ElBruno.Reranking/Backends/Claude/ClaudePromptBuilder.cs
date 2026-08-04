@@ -70,8 +70,13 @@ internal class ClaudePromptBuilder
     /// <param name="response">Claude's response text</param>
     /// <param name="itemCount">Expected number of items</param>
     /// <param name="includeExplanation">Whether to read per-item explanations from the response</param>
+    /// <param name="backendName">Backend identifier to include in parse errors</param>
     /// <returns>Scores in document order, with explanations when requested</returns>
-    public IReadOnlyList<ClaudeScoreResult> ParseResponse(string response, int itemCount, bool includeExplanation = false)
+    public IReadOnlyList<ClaudeScoreResult> ParseResponse(
+        string response,
+        int itemCount,
+        bool includeExplanation = false,
+        string backendName = ClaudeModelNames.Default)
     {
         try
         {
@@ -116,7 +121,7 @@ internal class ClaudePromptBuilder
         {
             throw new RerankerException(
                 $"Failed to parse Claude response: {ex.Message}",
-                "claude-3-opus",
+                ClaudeModelNames.Normalize(backendName),
                 "PARSE_ERROR",
                 ex);
         }

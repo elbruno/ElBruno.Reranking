@@ -13,7 +13,7 @@ public class ClaudeOptions
     /// <summary>
     /// Claude model ID to use (default: "claude-3-opus").
     /// </summary>
-    public string Model { get; set; } = "claude-3-opus";
+    public string Model { get; set; } = ClaudeModelNames.Default;
 
     /// <summary>
     /// Maximum tokens in response (default: 4096).

@@ -19,12 +19,18 @@ internal class ClaudeApiClient : IClaudeApiClient
     /// </summary>
     /// <param name="options">Claude-specific options</param>
     public ClaudeApiClient(ClaudeOptions options)
+        : this(options, null)
+    {
+    }
+
+    internal ClaudeApiClient(ClaudeOptions options, HttpMessageHandler? handler)
     {
         if (string.IsNullOrWhiteSpace(options.ApiKey))
             throw new ArgumentException("API key is required", nameof(options));
 
         _options = options;
-        _httpClient = new HttpClient { Timeout = TimeSpan.FromMilliseconds(options.TimeoutMs) };
+        _httpClient = handler is null ? new HttpClient() : new HttpClient(handler);
+        _httpClient.Timeout = TimeSpan.FromMilliseconds(options.TimeoutMs);
     }
 
     /// <summary>
@@ -52,7 +58,11 @@ internal class ClaudeApiClient : IClaudeApiClient
             try
             {
                 var response = await CallApiAsync(prompt, cancellationToken);
-                return _promptBuilder.ParseResponse(response, itemsList.Count, includeExplanation);
+                return _promptBuilder.ParseResponse(
+                    response,
+                    itemsList.Count,
+                    includeExplanation,
+                    ClaudeModelNames.Normalize(_options.Model));
             }
             catch (HttpRequestException ex) when (ShouldRetry(ex) && attempt < _options.MaxRetries)
             {
@@ -67,7 +77,7 @@ internal class ClaudeApiClient : IClaudeApiClient
 
         throw new RerankerException(
             "Failed to rerank after max retries",
-            "claude-3-opus",
+            ClaudeModelNames.Normalize(_options.Model),
             "API_TIMEOUT");
     }
 

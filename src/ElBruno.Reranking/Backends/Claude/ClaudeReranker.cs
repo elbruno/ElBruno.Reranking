@@ -14,7 +14,7 @@ public class ClaudeReranker : IReranker
     /// <summary>
     /// Gets the name of this reranker.
     /// </summary>
-    public string Name => $"claude-{_options.Model}";
+    public string Name => ClaudeModelNames.Normalize(_options.Model);
 
     /// <summary>
     /// Gets the backend type.
@@ -25,8 +25,8 @@ public class ClaudeReranker : IReranker
     /// Creates a new ClaudeReranker instance.
     /// </summary>
     /// <param name="apiKey">Anthropic API key</param>
-    /// <param name="model">Claude model to use (default: "3-opus")</param>
-    public ClaudeReranker(string apiKey, string model = "3-opus")
+    /// <param name="model">Claude model to use (default: "claude-3-opus")</param>
+    public ClaudeReranker(string apiKey, string model = ClaudeModelNames.Default)
     {
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new ArgumentException("API key cannot be null or empty", nameof(apiKey));
