@@ -1,0 +1,70 @@
+@page "/rerank-result-list"
+@using BlazorRerankingDemo.Components.Shared
+
+<PageTitle>RerankResultList</PageTitle>
+
+<div class="page-intro mb-4">
+    <span class="badge text-bg-primary mb-3">Component preview</span>
+    <h1 class="h2 mb-2">RerankResultList</h1>
+    <p class="text-body-secondary mb-0">
+        Show score badges, original ranks, and rank deltas for the current reranking result.
+    </p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body-tertiary d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="fw-semibold">Display options</div>
+
+                <div class="d-flex flex-wrap gap-3 small align-items-center">
+                    <label class="form-check-label">
+                        <input class="form-check-input me-1" type="checkbox" @bind="_showOriginalRank" />
+                        Show original rank
+                    </label>
+
+                    <label class="form-check-label">
+                        <input class="form-check-input me-1" type="checkbox" @bind="_showScoreBadge" />
+                        Show score badge
+                    </label>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <RerankResultList Results="@_results"
+                                  ShowOriginalRank="@_showOriginalRank"
+                                  ShowScoreBadge="@_showScoreBadge" />
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <CodeSnippets Title="List details" Items="@_snippets" />
+    </div>
+</div>
+
+<div class="mt-4">
+    <CodeSample Title="Usage" Language="razor" Description="Bind a rerank result list and toggle the visual details you want to surface." Code="@_usage" />
+</div>
+
+@code {
+    private static readonly IReadOnlyList<CodeSnippet> _snippets = new[]
+    {
+        new CodeSnippet("Results input", "The list consumes IReadOnlyList<RerankResult> and renders each result block.", "Results"),
+        new CodeSnippet("Score badge", "Score badges can be hidden when you want a cleaner list.", "ShowScoreBadge"),
+        new CodeSnippet("Original rank", "Original rank metadata is used to calculate rank deltas.", "ShowOriginalRank"),
+        new CodeSnippet("Stable view", "The same reranked result always renders in the same order.", "Deterministic"),
+    };
+
+    private static readonly string _usage = "<RerankResultList Results=\"@results\" ShowOriginalRank=\"true\" ShowScoreBadge=\"true\" />";
+
+    private IReadOnlyList<RerankResult> _results = Array.Empty<RerankResult>();
+    private bool _showOriginalRank = true;
+    private bool _showScoreBadge = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        IReranker reranker = new DeterministicRerankService(RerankerBackendType.ONNX);
+        _results = [await reranker.RerankAsync(DemoCatalog.DefaultQuery, DemoCatalog.DefaultCandidates)];
+    }
+}

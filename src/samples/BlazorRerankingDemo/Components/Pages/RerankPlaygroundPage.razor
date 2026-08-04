@@ -1,0 +1,69 @@
+@page "/rerank-playground"
+@using BlazorRerankingDemo.Components.Shared
+
+<PageTitle>RerankPlayground</PageTitle>
+
+<div class="page-intro mb-4">
+    <span class="badge text-bg-primary mb-3">Component preview</span>
+    <h1 class="h2 mb-2">RerankPlayground</h1>
+    <p class="text-body-secondary mb-0">
+        Compose the full demo: choose a backend, rerank a query, and export the JSON payload.
+    </p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body-tertiary d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="fw-semibold">Backend selection</div>
+                <span class="badge text-bg-dark">@_selectedBackend</span>
+            </div>
+
+            <div class="card-body">
+                <BackendSelector OnBackendChanged="@OnBackendChanged" ShowLatencyHint="true" />
+            </div>
+        </div>
+
+        <RerankPlayground Reranker="@_reranker"
+                          DefaultQuery="@DemoCatalog.DefaultQuery"
+                          ShowExportButton="true" />
+    </div>
+
+    <div class="col-lg-5">
+        <CodeSnippets Title="Playground details" Items="@_snippets" />
+    </div>
+</div>
+
+<div class="mt-4">
+    <CodeSample Title="Usage" Language="razor" Description="Compose the selector, the playground, and the deterministic reranker." Code="@_usage" />
+</div>
+
+@code {
+    private static readonly IReadOnlyList<CodeSnippet> _snippets = new[]
+    {
+        new CodeSnippet("Query input", "The playground keeps a default query but lets you edit it before reranking.", "Text area"),
+        new CodeSnippet("Candidate list", "Candidates are read from a stable multiline block for repeatable demos.", "Textarea"),
+        new CodeSnippet("JSON export", "Click Export JSON to capture the deterministic query/result payload.", "Export JSON"),
+        new CodeSnippet("Backend aware", "Changing the backend swaps the reranker used by the playground.", "DeterministicRerankService"),
+    };
+
+    private static readonly string _usage = string.Join(
+        Environment.NewLine,
+        [
+            "<BackendSelector OnBackendChanged=\"@OnBackendChanged\" ShowLatencyHint=\"true\" />",
+            "",
+            "<RerankPlayground Reranker=\"@_reranker\"",
+            "                  DefaultQuery=\"@DemoCatalog.DefaultQuery\"",
+            "                  ShowExportButton=\"true\" />",
+        ]);
+
+    private RerankerBackendType _selectedBackend = RerankerBackendType.ONNX;
+    private IReranker _reranker = new DeterministicRerankService(RerankerBackendType.ONNX);
+
+    private Task OnBackendChanged(RerankerBackendType backend)
+    {
+        _selectedBackend = backend;
+        _reranker = new DeterministicRerankService(backend);
+        return Task.CompletedTask;
+    }
+}

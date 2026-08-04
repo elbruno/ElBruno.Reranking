@@ -1,0 +1,75 @@
+@page "/backend-selector"
+@using BlazorRerankingDemo.Components.Shared
+@using ElBruno.Reranking
+
+<PageTitle>BackendSelector</PageTitle>
+
+<div class="page-intro mb-4">
+    <span class="badge text-bg-primary mb-3">Component preview</span>
+    <h1 class="h2 mb-2">BackendSelector</h1>
+    <p class="text-body-secondary mb-0">
+        Switch backends with the real component and refresh the same deterministic candidate set.
+    </p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body-tertiary fw-semibold">Available backends</div>
+            <div class="card-body">
+                <BackendSelector OnBackendChanged="@OnBackendChanged" ShowLatencyHint="true" />
+            </div>
+        </div>
+
+        <RerankResultList Results="@_results" ShowOriginalRank="true" ShowScoreBadge="true" />
+    </div>
+
+    <div class="col-lg-5">
+        <CodeSnippets Title="Selector details" Items="@_snippets" />
+    </div>
+</div>
+
+<div class="mt-4">
+    <CodeSample Title="Usage" Language="razor" Description="@BackendSelectorDescription" Code="@_usage" />
+</div>
+
+@code {
+    private static readonly string BackendSelectorDescription = "The selector raises EventCallback<RerankerBackendType> and the page reranks the current candidates.";
+
+    private static readonly IReadOnlyList<CodeSnippet> _snippets = new[]
+    {
+        new CodeSnippet("Service registration", "AddRerankingBlazorComponents registers the backend catalog used by the selector.", "Catalog singleton"),
+        new CodeSnippet("Callback", "The page listens for OnBackendChanged to keep the current backend in sync.", "EventCallback<RerankerBackendType>"),
+        new CodeSnippet("Deterministic output", "Each selected backend uses the same candidates and repeatable scoring.", "Stable"),
+        new CodeSnippet("Current state", "The active backend is reflected in the result list below the selector.", "Selected backend"),
+    };
+
+    private static readonly string _usage = string.Join(
+        Environment.NewLine,
+        [
+            "<BackendSelector OnBackendChanged=\"@OnBackendChanged\" ShowLatencyHint=\"true\" />",
+            "",
+            "<RerankResultList Results=\"@_results\" ShowOriginalRank=\"true\" ShowScoreBadge=\"true\" />",
+        ]);
+
+    private RerankerBackendType _selectedBackend = RerankerBackendType.ONNX;
+    private IReadOnlyList<RerankResult> _results = Array.Empty<RerankResult>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+    }
+
+    private async Task OnBackendChanged(RerankerBackendType backend)
+    {
+        _selectedBackend = backend;
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        IReranker reranker = new DeterministicRerankService(_selectedBackend);
+        var result = await reranker.RerankAsync(DemoCatalog.DefaultQuery, DemoCatalog.DefaultCandidates);
+        _results = [result];
+    }
+}

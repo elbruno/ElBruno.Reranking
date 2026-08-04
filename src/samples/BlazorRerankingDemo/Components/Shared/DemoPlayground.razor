@@ -1,0 +1,107 @@
+@using System.Text.Json
+@using ElBruno.Reranking
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body-tertiary fw-semibold">Playground inputs</div>
+            <div class="card-body">
+                <label class="form-label" for="query">Query</label>
+                <textarea id="query" class="form-control" rows="3" @bind="_query"></textarea>
+
+                <label class="form-label mt-3" for="candidates">Candidates</label>
+                <textarea id="candidates" class="form-control font-monospace" rows="12" @bind="_candidateBlock"></textarea>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button type="button" class="btn btn-primary" @onclick="RerankAsync">Rerank</button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="ResetAsync">Reset demo</button>
+                    <button type="button" class="btn btn-outline-primary ms-auto" @onclick="ToggleExportJson">
+                        @(_showExportJson ? "Hide JSON" : "Export JSON")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <DemoResultList Result="@_result" ShowOriginalRank="true" ShowScoreBadge="true" />
+
+        <div class="mt-4">
+            <DemoScoreHeatmap Result="@_result" SortByScore="@SortByScore" ShowLabels="true" />
+        </div>
+
+        @if (_showExportJson)
+        {
+            <div class="mt-4">
+                <CodeSample Title="JSON export" Language="json" Description="Deterministic payload generated from the current demo state." Code="@_exportJson" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RerankerBackendType Backend { get; set; } = RerankerBackendType.ONNX;
+
+    [Parameter]
+    public string DefaultQuery { get; set; } = DemoCatalog.DefaultQuery;
+
+    [Parameter]
+    public IReadOnlyList<RerankItem> Candidates { get; set; } = DemoCatalog.DefaultCandidates;
+
+    [Parameter]
+    public bool SortByScore { get; set; } = true;
+
+    private string _query = string.Empty;
+    private string _candidateBlock = string.Empty;
+    private string _exportJson = string.Empty;
+    private RerankResult? _result;
+    private bool _initialized;
+    private bool _showExportJson;
+    private RerankerBackendType _currentBackend;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!_initialized)
+        {
+            _query = DefaultQuery;
+            _candidateBlock = DemoCatalog.FormatCandidates(Candidates);
+            _initialized = true;
+            _currentBackend = Backend;
+            await RerankAsync();
+            return;
+        }
+
+        if (_currentBackend != Backend)
+        {
+            _currentBackend = Backend;
+            await RerankAsync();
+        }
+    }
+
+    private async Task RerankAsync()
+    {
+        var reranker = new DemoReranker(_currentBackend);
+        var items = DemoCatalog.ParseCandidates(_candidateBlock);
+        _result = await reranker.RerankAsync(_query, items);
+        _exportJson = JsonSerializer.Serialize(
+            new
+            {
+                query = _query,
+                backend = _currentBackend.ToString(),
+                result = _result,
+            },
+            new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private async Task ResetAsync()
+    {
+        _query = DefaultQuery;
+        _candidateBlock = DemoCatalog.FormatCandidates(Candidates);
+        _showExportJson = false;
+        await RerankAsync();
+    }
+
+    private void ToggleExportJson()
+        => _showExportJson = !_showExportJson;
+}

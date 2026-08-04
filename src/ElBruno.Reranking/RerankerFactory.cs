@@ -24,9 +24,9 @@ public static class RerankerFactory
     /// Creates a Claude API-based reranker.
     /// </summary>
     /// <param name="apiKey">Anthropic API key</param>
-    /// <param name="model">Claude model ID (optional, default: "3-opus")</param>
+    /// <param name="model">Claude model ID (optional, default: "claude-3-opus")</param>
     /// <returns>ClaudeReranker instance</returns>
-    public static IReranker CreateClaude(string apiKey, string model = "3-opus")
+    public static IReranker CreateClaude(string apiKey, string model = ClaudeModelNames.Default)
     {
         return new ClaudeReranker(apiKey, model);
     }

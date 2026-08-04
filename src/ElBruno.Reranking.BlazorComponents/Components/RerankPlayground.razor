@@ -1,0 +1,149 @@
+@using ElBruno.Reranking.BlazorComponents.Internal
+@inject RerankingStateService State
+@inject IReranker DefaultReranker
+@implements IDisposable
+
+<div class="rerank-playground" data-testid="rerank-playground">
+    <label>
+        Query
+        <input data-testid="rerank-query" @bind="_query" />
+    </label>
+
+    <label>
+        Candidates
+        <textarea data-testid="rerank-candidates" @bind="_candidatesText"></textarea>
+    </label>
+
+    <button type="button" data-testid="rerank-submit" @onclick="RunRerank">Rerank</button>
+
+    <div class="rerank-playground__backend">
+        Selected backend: <strong>@State.SelectedBackend</strong>
+    </div>
+
+    @if (ShowExportButton)
+    {
+        <button type="button" data-testid="rerank-export" @onclick="ToggleExport">Export JSON</button>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_validationMessage))
+    {
+        <p class="rerank-playground__validation" data-testid="validation-message">@_validationMessage</p>
+    }
+
+    @if (_result is not null)
+    {
+        <RerankResultList Results="@(new[] { _result })" />
+        <ScoreHeatmap Results="@(new[] { _result })" />
+    }
+
+    @if (_showExport && _result is not null)
+    {
+        <pre data-testid="export-json">@_exportJson</pre>
+    }
+</div>
+
+@code {
+    [Parameter] public IReranker? Reranker { get; set; }
+
+    [Parameter] public string? DefaultQuery { get; set; }
+
+    [Parameter] public string? DefaultCandidates { get; set; }
+
+    [Parameter] public bool ShowExportButton { get; set; } = true;
+
+    private string _query = string.Empty;
+    private string _candidatesText = string.Empty;
+    private string? _validationMessage;
+    private bool _showExport;
+    private RerankResult? _result;
+
+    protected override void OnInitialized()
+    {
+        State.OnStateChanged += HandleStateChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_query.Length == 0)
+        {
+            _query = !string.IsNullOrWhiteSpace(State.Query)
+                ? State.Query
+                : DefaultQuery ?? string.Empty;
+
+            if (_query.Length > 0)
+            {
+                State.SetQuery(_query);
+            }
+        }
+
+        if (_candidatesText.Length == 0)
+        {
+            _candidatesText = !string.IsNullOrWhiteSpace(State.CandidatesText)
+                ? State.CandidatesText
+                : DefaultCandidates ?? string.Empty;
+
+            if (_candidatesText.Length > 0)
+            {
+                State.SetCandidatesText(_candidatesText);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        State.OnStateChanged -= HandleStateChanged;
+    }
+
+    private async Task RunRerank()
+    {
+        var reranker = Reranker ?? DefaultReranker;
+        var candidates = RerankInputParser.ParseCandidates(_candidatesText);
+
+        if (candidates.Count == 0)
+        {
+            _validationMessage = "Enter at least one candidate.";
+            _result = null;
+            State.Reset();
+            State.SetError(_validationMessage);
+            _showExport = false;
+            return;
+        }
+
+        _validationMessage = null;
+        State.SetQuery(_query);
+        State.SetCandidatesText(_candidatesText);
+        State.SetBusy(true);
+        try
+        {
+            _result = await reranker.RerankAsync(_query, candidates);
+            State.SetResults(_result);
+        }
+        catch (Exception ex)
+        {
+            _validationMessage = ex.Message;
+            _result = null;
+            State.Reset();
+            State.SetError(ex.Message);
+        }
+        finally
+        {
+            State.SetBusy(false);
+        }
+
+        _showExport = false;
+    }
+
+    private void ToggleExport()
+    {
+        _showExport = !_showExport;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    private string _exportJson => JsonSerializer.Serialize(new
+    {
+        query = _query,
+        backend = State.SelectedBackend,
+        result = _result
+    }, new JsonSerializerOptions { WriteIndented = true });
+}

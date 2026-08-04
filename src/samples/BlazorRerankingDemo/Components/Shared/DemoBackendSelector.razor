@@ -1,0 +1,49 @@
+@using ElBruno.Reranking
+
+<div class="row g-3">
+    @foreach (var backend in Backends)
+    {
+        <div class="col-md-4">
+            <button type="button"
+                    class="@GetButtonClass(backend)"
+                    @onclick="() => SelectBackendAsync(backend.BackendType)">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div class="text-start">
+                        <div class="fw-semibold">@backend.DisplayName</div>
+                        <div class="small">@backend.Description</div>
+                    </div>
+
+                    @if (ShowLatencyHint)
+                    {
+                        <span class="badge @backend.BadgeClass text-nowrap">@backend.LatencyHint</span>
+                    }
+                </div>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DemoBackendProfile> Backends { get; set; } = Array.Empty<DemoBackendProfile>();
+
+    [Parameter]
+    public RerankerBackendType SelectedBackend { get; set; } = RerankerBackendType.ONNX;
+
+    [Parameter]
+    public EventCallback<RerankerBackendType> SelectedBackendChanged { get; set; }
+
+    [Parameter]
+    public bool ShowLatencyHint { get; set; } = true;
+
+    private string GetButtonClass(DemoBackendProfile backend)
+    {
+        var selected = backend.BackendType == SelectedBackend;
+        return selected
+            ? $"btn btn-primary text-white w-100 h-100 text-start {backend.AccentClass} shadow-sm"
+            : $"btn btn-outline-secondary w-100 h-100 text-start {backend.AccentClass}";
+    }
+
+    private Task SelectBackendAsync(RerankerBackendType backend)
+        => SelectedBackendChanged.InvokeAsync(backend);
+}

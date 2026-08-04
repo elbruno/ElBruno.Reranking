@@ -9,12 +9,12 @@ using ElBruno.Reranking.Utils;
 public class ClaudeReranker : IReranker
 {
     private readonly ClaudeOptions _options;
-    private ClaudeApiClient? _apiClient;
+    private IClaudeApiClient? _apiClient;
 
     /// <summary>
     /// Gets the name of this reranker.
     /// </summary>
-    public string Name => $"claude-{_options.Model}";
+    public string Name => ClaudeModelNames.Normalize(_options.Model);
 
     /// <summary>
     /// Gets the backend type.
@@ -25,8 +25,8 @@ public class ClaudeReranker : IReranker
     /// Creates a new ClaudeReranker instance.
     /// </summary>
     /// <param name="apiKey">Anthropic API key</param>
-    /// <param name="model">Claude model to use (default: "3-opus")</param>
-    public ClaudeReranker(string apiKey, string model = "3-opus")
+    /// <param name="model">Claude model to use (default: "claude-3-opus")</param>
+    public ClaudeReranker(string apiKey, string model = ClaudeModelNames.Default)
     {
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new ArgumentException("API key cannot be null or empty", nameof(apiKey));
@@ -50,6 +50,19 @@ public class ClaudeReranker : IReranker
             throw new ArgumentException("API key cannot be null or empty", nameof(options));
 
         _options = options;
+    }
+
+    internal ClaudeReranker(ClaudeOptions options, IClaudeApiClient apiClient)
+    {
+        if (options == null)
+            throw new ArgumentNullException(nameof(options));
+        if (string.IsNullOrWhiteSpace(options.ApiKey))
+            throw new ArgumentException("API key cannot be null or empty", nameof(options));
+        if (apiClient == null)
+            throw new ArgumentNullException(nameof(apiClient));
+
+        _options = options;
+        _apiClient = apiClient;
     }
 
     /// <summary>
@@ -106,10 +119,10 @@ public class ClaudeReranker : IReranker
         _apiClient ??= new ClaudeApiClient(_options);
 
         // Call Claude API
-        var scores = await _apiClient.RankAsync(query, itemsList, cancellationToken);
+        var scores = await _apiClient.RankAsync(query, itemsList, options?.IncludeExplanation ?? false, cancellationToken);
 
         // Format results
-        var pairs = itemsList.Zip(scores, (item, score) => (item, score));
+        var pairs = itemsList.Zip(scores, (item, score) => (item, score.Score, score.Explanation));
         return ResultFormatter.Format(pairs, query, Name, options, timer.ElapsedMilliseconds);
     }
 

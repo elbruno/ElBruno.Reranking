@@ -7,7 +7,6 @@
 The Claude backend leverages Claude's reasoning capabilities for intelligent reranking. It's ideal for scenarios requiring:
 
 - 🧠 **Precision** — 98%+ R@5 on semantic relevance
-- 📝 **Explanations** — Understand why items are ranked
 - 🤔 **Complex reasoning** — Handle nuanced queries
 - 🔄 **Semantic understanding** — Capture intent beyond keywords
 
@@ -18,14 +17,13 @@ The Claude backend leverages Claude's reasoning capabilities for intelligent rer
 - Context: Up to 200K tokens
 - Latency: 500ms–2s per request
 - Accuracy: 98%+ R@5 on benchmark datasets
-- Cost: ~$0.0008 per 100 documents
+- Cost: ~$0.0008 per 100 items
 
 ## When to Use Claude
 
 ✅ **Use Claude if you need:**
 - Highest accuracy (98%+ R@5)
 - Complex semantic reasoning
-- Ranking explanations
 - Nuanced query understanding
 - Handling ambiguous or complex queries
 
@@ -61,6 +59,7 @@ set ANTHROPIC_API_KEY=sk-ant-...
 
 ```csharp
 using ElBruno.Reranking;
+using ElBruno.Reranking.Backends.Claude;
 
 var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
     ?? throw new InvalidOperationException("ANTHROPIC_API_KEY not set");
@@ -77,7 +76,7 @@ Console.WriteLine(reranker.Name);  // "claude-3-opus"
 ```csharp
 Task<RerankResult> RerankAsync(
     string query,
-    IEnumerable<string> documents,
+    IEnumerable<RerankItem> items,
     RerankOptions? options = null,
     CancellationToken cancellationToken = default
 );
@@ -85,11 +84,28 @@ Task<RerankResult> RerankAsync(
 
 **Parameters:**
 - `query` — Search query/context (string)
-- `documents` — Candidate documents to rank (string enumerable)
+- `items` — Candidate items to rank (`IEnumerable<RerankItem>`)
 - `options` — Configuration (see below)
 - `cancellationToken` — For cancellation support
 
-**Returns:** `RerankResult` with ranked documents sorted by score (descending)
+**Returns:** `RerankResult` with `Scores` sorted by score (descending) and `TotalItems`
+
+### Include Explanations
+
+Claude can populate per-item explanations when requested:
+
+```csharp
+var options = new RerankOptions
+{
+    IncludeExplanation = true
+};
+
+var result = await reranker.RerankAsync(query, items, options);
+
+Console.WriteLine(result.Scores[0].Explanation);
+```
+
+Set `IncludeExplanation = true` to include explanations in Claude responses. Leave it off for the default, faster path.
 
 ### RerankOptions
 
@@ -97,13 +113,12 @@ Task<RerankResult> RerankAsync(
 var options = new RerankOptions
 {
     TopK = 10,                      // Return top 10 only (default: all)
-    MinScore = 0.7,                 // Filter score >= 0.7 (default: 0.0)
-    TimeoutMs = 60000,              // 60 second timeout (default: 30000)
-    EnableRetry = true,             // Retry transient failures (default: true)
-    MaxRetries = 3,                 // Max 3 retry attempts (default: 3)
+    MinScore = 0.7f,                // Filter score >= 0.7 (default: 0.0)
+    MaxItems = 100,                 // Limit the number of items processed
+    CustomOptions = new Dictionary<string, string>()
 };
 
-var result = await reranker.RerankAsync(query, documents, options);
+var result = await reranker.RerankAsync(query, items, options);
 ```
 
 ## Usage Examples
@@ -111,22 +126,22 @@ var result = await reranker.RerankAsync(query, documents, options);
 ### Basic Reranking
 
 ```csharp
-var documents = new[]
+var items = new[]
 {
-    "Paris is the capital and most populous city of France.",
-    "The Eiffel Tower is a wrought-iron lattice tower in Paris.",
-    "Rome is the capital of Italy.",
-    "The Colosseum is an ancient amphitheater in Rome.",
+    new RerankItem("Paris is the capital and most populous city of France."),
+    new RerankItem("The Eiffel Tower is a wrought-iron lattice tower in Paris."),
+    new RerankItem("Rome is the capital of Italy."),
+    new RerankItem("The Colosseum is an ancient amphitheater in Rome."),
 };
 
 var result = await reranker.RerankAsync(
     query: "What is the capital of France?",
-    documents: documents
+    items: items
 );
 
-foreach (var doc in result.RankedDocuments)
+foreach (var score in result.Scores)
 {
-    Console.WriteLine($"{doc.Rank}. {doc.Score:F3} — {doc.Text}");
+    Console.WriteLine($"{score.Rank}. {score.Score:F3} — {score.Item.Text}");
 }
 ```
 
@@ -138,44 +153,58 @@ foreach (var doc in result.RankedDocuments)
 4. 0.38 — Rome is the capital of Italy.
 ```
 
-### With Explanations
+### Configure Request Timeout
 
 ```csharp
+var claudeOptions = new ClaudeOptions
+{
+    ApiKey = apiKey,
+    TimeoutMs = 90000,  // 90 seconds
+};
+
+var reranker = new ClaudeReranker(claudeOptions);
+
 var options = new RerankOptions { TopK = 3 };
 
 var result = await reranker.RerankAsync(
     query: "best programming language for web development",
-    documents: new[]
+    items: new[]
     {
-        "Python is a high-level language known for simplicity.",
-        "JavaScript is essential for web browser programming.",
-        "Java is widely used in enterprise environments.",
+        new RerankItem("Python is a high-level language known for simplicity."),
+        new RerankItem("JavaScript is essential for web browser programming."),
+        new RerankItem("Java is widely used in enterprise environments."),
     },
     options: options
 );
 
-foreach (var doc in result.RankedDocuments)
+foreach (var score in result.Scores)
 {
-    Console.WriteLine($"Score: {doc.Score:F3}");
-    Console.WriteLine($"Text: {doc.Text}");
+    Console.WriteLine($"Score: {score.Score:F3}");
+    Console.WriteLine($"Text: {score.Item.Text}");
     Console.WriteLine();
 }
 ```
 
-### Error Handling with Retries
+### Error Handling and Timeouts
 
 ```csharp
 var options = new RerankOptions
 {
-    EnableRetry = true,
-    MaxRetries = 5,
-    TimeoutMs = 90000  // 90 seconds
+    CustomOptions = new Dictionary<string, string>()
 };
+
+var claudeOptions = new ClaudeOptions
+{
+    ApiKey = apiKey,
+    TimeoutMs = 90000,  // 90 seconds
+};
+
+var reranker = new ClaudeReranker(claudeOptions);
 
 try
 {
-    var result = await reranker.RerankAsync(query, documents, options);
-    Console.WriteLine($"Success! Top result: {result.RankedDocuments[0].Text}");
+    var result = await reranker.RerankAsync(query, items, options);
+    Console.WriteLine($"Success! Top result: {result.Scores[0].Item.Text}");
 }
 catch (ArgumentException ex)
 {
@@ -187,7 +216,7 @@ catch (OperationCanceledException ex)
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"API error after retries: {ex.Message}");
+    Console.WriteLine($"API error: {ex.Message}");
 }
 ```
 
@@ -203,8 +232,8 @@ var queries = new[]
 
 foreach (var query in queries)
 {
-    var result = await reranker.RerankAsync(query, documents);
-    Console.WriteLine($"Query: {query}, Top score: {result.RankedDocuments[0].Score:F3}");
+    var result = await reranker.RerankAsync(query, items);
+    Console.WriteLine($"Query: {query}, Top score: {result.Scores[0].Score:F3}");
 }
 ```
 
@@ -212,7 +241,7 @@ foreach (var query in queries)
 
 ### Latency
 
-| Documents | Latency | Network |
+| Items | Latency | Network |
 |-----------|---------|---------|
 | 5 | ~400ms | ~300ms |
 | 10 | ~600ms | ~400ms |
@@ -229,13 +258,13 @@ foreach (var query in queries)
 
 ### Cost
 
-- **Per 100 documents:** ~$0.0008 (0.0000008 per document)
-- **Per 1M documents:** ~$8
+- **Per 100 items:** ~$0.0008 (0.0000008 per item)
+- **Per 1M items:** ~$8
 - **Per 1000 reranking calls:** ~$0.80
 
 **Cost example:**
 ```
-Scenario: 100 search queries/day, 50 documents/query
+Scenario: 100 search queries/day, 50 items/query
 - Daily: 100 × 50 × $0.000008 = $0.04
 - Monthly: $1.20
 - Yearly: $14.40
@@ -243,16 +272,16 @@ Scenario: 100 search queries/day, 50 documents/query
 
 ## Limitations & Constraints
 
-### Document Limits
+### Item Limits
 
-- Max ~500 documents per call (token limit)
+- Max ~500 items per call (token limit)
 - Recommended: <100 for best latency
 
 ```csharp
 // Batch large result sets
-if (documents.Count > 500)
+if (items.Length > 500)
 {
-    var batches = documents
+    var batches = items
         .Chunk(100)  // .NET 6+
         .ToList();
     
@@ -266,7 +295,7 @@ if (documents.Count > 500)
 
 ### Token Limits
 
-- Query + documents must fit in ~100K tokens
+- Query + items must fit in ~100K tokens
 - Average: ~3 tokens per word
 
 ### Rate Limiting
@@ -280,12 +309,20 @@ if (documents.Count > 500)
 ### Custom Timeouts
 
 ```csharp
-var options = new RerankOptions
+var claudeOptions = new ClaudeOptions
 {
+    ApiKey = apiKey,
     TimeoutMs = 120000  // 2 minute timeout for very large batches
 };
 
-var result = await reranker.RerankAsync(query, documents, options);
+var reranker = new ClaudeReranker(claudeOptions);
+
+var options = new RerankOptions
+{
+    TopK = 10
+};
+
+var result = await reranker.RerankAsync(query, items, options);
 ```
 
 ### Retry Strategy
@@ -315,9 +352,9 @@ Not retried on:
 // Only high-confidence results
 var options = new RerankOptions { MinScore = 0.8f };
 
-var result = await reranker.RerankAsync(query, documents, options);
+var result = await reranker.RerankAsync(query, items, options);
 
-var highConfidence = result.RankedDocuments
+var highConfidence = result.Scores
     .Where(d => d.Score >= 0.8)
     .ToList();
 ```
@@ -330,7 +367,7 @@ var highConfidence = result.RankedDocuments
 // Inefficient: sequential API calls
 foreach (var query in queries)
 {
-    var result = await reranker.RerankAsync(query, documents);
+    var result = await reranker.RerankAsync(query, items);
 }
 
 // Better: parallel with rate limit awareness
@@ -339,7 +376,7 @@ await Parallel.ForEachAsync(
     new ParallelOptions { MaxDegreeOfParallelism = 10 },
     async (query, ct) =>
     {
-        var result = await reranker.RerankAsync(query, documents, cancellationToken: ct);
+        var result = await reranker.RerankAsync(query, items, cancellationToken: ct);
     }
 );
 ```
@@ -353,7 +390,7 @@ try
 {
     var result = await reranker.RerankAsync(
         query,
-        documents,
+        items,
         cancellationToken: cts.Token
     );
 }
@@ -369,10 +406,10 @@ catch (OperationCanceledException)
 ```csharp
 var sw = System.Diagnostics.Stopwatch.StartNew();
 
-var result = await reranker.RerankAsync(query, documents);
+var result = await reranker.RerankAsync(query, items);
 
 sw.Stop();
-Console.WriteLine($"Reranking took {sw.ElapsedMilliseconds}ms for {result.TotalDocuments} documents");
+Console.WriteLine($"Reranking took {sw.ElapsedMilliseconds}ms for {result.TotalItems} items");
 ```
 
 ### 4. Cache Results
@@ -382,16 +419,16 @@ private static Dictionary<string, RerankResult> _cache = new();
 
 public async Task<RerankResult> RerankWithCacheAsync(
     string query,
-    IEnumerable<string> documents)
+    IEnumerable<RerankItem> items)
 {
-    var key = $"{query}:{string.Join(',', documents)}";
+    var key = $"{query}:{string.Join(',', items.Select(item => item.Text))}";
     
     if (_cache.TryGetValue(key, out var cached))
     {
         return cached;
     }
     
-    var result = await reranker.RerankAsync(query, documents);
+    var result = await reranker.RerankAsync(query, items);
     _cache[key] = result;
     return result;
 }
@@ -402,7 +439,7 @@ public async Task<RerankResult> RerankWithCacheAsync(
 ```csharp
 try
 {
-    var result = await reranker.RerankAsync(query, documents);
+    var result = await reranker.RerankAsync(query, items);
 }
 catch (ArgumentException ex)
 {
@@ -446,7 +483,7 @@ catch (Exception ex)
 | Cost | ~$0.0008/call | Free | Free |
 | Privacy | ✗ Cloud | ✓ Local | ✓ Local |
 | Offline | ✗ No | ✓ Yes | ✓ Yes |
-| Explanations | ✓ Yes | ✗ No | Depends |
+| Explanations | ✓ Yes (when `RerankOptions.IncludeExplanation=true`) | ✗ No | Depends |
 
 ## Next Steps
 

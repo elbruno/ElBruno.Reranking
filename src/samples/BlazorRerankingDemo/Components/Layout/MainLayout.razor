@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+
+<div class="layout-shell">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-dark-subtle shadow-sm">
+        <div class="container-fluid px-3 px-lg-4">
+            <a class="navbar-brand fw-semibold" href="/">BlazorRerankingDemo</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sampleNav" aria-controls="sampleNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="sampleNav">
+                <ul class="navbar-nav ms-auto gap-lg-1">
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/backend-selector">BackendSelector</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/rerank-result-list">RerankResultList</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/score-heatmap">ScoreHeatmap</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/rerank-playground">RerankPlayground</NavLink>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4 py-lg-5">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

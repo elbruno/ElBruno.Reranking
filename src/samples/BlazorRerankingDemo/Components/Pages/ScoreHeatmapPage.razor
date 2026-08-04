@@ -1,0 +1,90 @@
+@page "/score-heatmap"
+@using BlazorRerankingDemo.Components.Shared
+
+<PageTitle>ScoreHeatmap</PageTitle>
+
+<div class="page-intro mb-4">
+    <span class="badge text-bg-primary mb-3">Component preview</span>
+    <h1 class="h2 mb-2">ScoreHeatmap</h1>
+    <p class="text-body-secondary mb-0">
+        Visualize relevance with a deterministic grey-to-blue heatmap and optional labels.
+    </p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body-tertiary d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="fw-semibold">Heatmap controls</div>
+
+                <div class="d-flex flex-wrap gap-3 small align-items-center">
+                    <label class="form-check-label">
+                        <input class="form-check-input me-1" type="checkbox" @bind="_sortByScore" />
+                        Sort by score
+                    </label>
+
+                    <label class="form-check-label">
+                        <input class="form-check-input me-1" type="checkbox" @bind="_showLabels" />
+                        Show labels
+                    </label>
+
+                    <select class="form-select form-select-sm w-auto" @bind="_selectedBackend" @bind:after="RefreshAsync">
+                        @foreach (var backend in _backends)
+                        {
+                            <option value="@backend.Backend">@backend.DisplayName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <ScoreHeatmap Results="@_results"
+                              SortByScore="@_sortByScore"
+                              ShowLabels="@_showLabels" />
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <CodeSnippets Title="Heatmap details" Items="@_snippets" />
+    </div>
+</div>
+
+<div class="mt-4">
+    <CodeSample Title="Usage" Language="razor" Description="Render the same rerank result as a score heatmap, optionally sorted by score." Code="@_usage" />
+</div>
+
+@code {
+    private static readonly IReadOnlyList<CodeSnippet> _snippets = new[]
+    {
+        new CodeSnippet("Gradient", "Bars use a deterministic grey-to-blue interpolation based on the score.", "RGB blend"),
+        new CodeSnippet("Sort toggle", "Show the original order or the score-sorted order without changing the data.", "SortByScore"),
+        new CodeSnippet("Label toggle", "Labels can be hidden when you want the bars to stay compact.", "ShowLabels"),
+        new CodeSnippet("One result list", "The component renders every score in every rerank result you pass in.", "IReadOnlyList<RerankResult>"),
+    };
+
+    private static readonly string _usage = "<ScoreHeatmap Results=\"@results\" SortByScore=\"true\" ShowLabels=\"true\" />";
+
+    private readonly IReadOnlyList<(RerankerBackendType Backend, string DisplayName)> _backends =
+    [
+        (RerankerBackendType.ONNX, "BGE-ONNX"),
+        (RerankerBackendType.Claude, "Claude API"),
+        (RerankerBackendType.Ollama, "Ollama"),
+    ];
+
+    private RerankerBackendType _selectedBackend = RerankerBackendType.Claude;
+    private IReadOnlyList<RerankResult> _results = Array.Empty<RerankResult>();
+    private bool _sortByScore = true;
+    private bool _showLabels = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        IReranker reranker = new DeterministicRerankService(_selectedBackend);
+        _results = [await reranker.RerankAsync(DemoCatalog.DefaultQuery, DemoCatalog.DefaultCandidates)];
+    }
+}

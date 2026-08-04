@@ -6,7 +6,7 @@
 
 The ONNX backend uses the **BGE-Reranker-base** model (278M parameters) for semantic reranking on CPU. It's ideal for production deployments where you need:
 
-- ⚡ **Speed** — <100ms for 100 documents
+- ⚡ **Speed** — <100ms for 100 items
 - 🔒 **Privacy** — Data stays on your server
 - 💰 **Cost** — Free (no API calls)
 - 🚀 **Scalability** — High throughput on commodity hardware
@@ -18,7 +18,7 @@ The ONNX backend uses the **BGE-Reranker-base** model (278M parameters) for sema
 - Architecture: BERT variant optimized for reranking
 - Training: 500M+ synthetic reranking examples
 - Accuracy: ~96% R@5 on benchmark datasets
-- Latency: ~0.15ms per document (linear scaling)
+- Latency: ~0.15ms per item (linear scaling)
 
 ## When to Use BGE ONNX
 
@@ -76,7 +76,7 @@ Console.WriteLine(reranker.Name);  // "bge-reranker-base"
 ```csharp
 Task<RerankResult> RerankAsync(
     string query,
-    IEnumerable<string> documents,
+    IEnumerable<RerankItem> items,
     RerankOptions? options = null,
     CancellationToken cancellationToken = default
 );
@@ -84,24 +84,24 @@ Task<RerankResult> RerankAsync(
 
 **Parameters:**
 - `query` — Search query/context (string)
-- `documents` — Candidate documents to rank (string enumerable)
+- `items` — Candidate items to rank (`IEnumerable<RerankItem>`)
 - `options` — Configuration (see below)
 - `cancellationToken` — For cancellation support
 
-**Returns:** `RerankResult` with ranked documents sorted by score (descending)
+**Returns:** `RerankResult` with `Scores` sorted by score (descending) and `TotalItems`
 
 ### RerankOptions
 
 ```csharp
 var options = new RerankOptions
 {
-    TopK = 10,              // Return top 10 only (default: all)
-    MinScore = 0.7,         // Filter score >= 0.7 (default: 0.0)
-    TimeoutMs = 30000,      // 30 second timeout (default: 30000)
-    EnableRetry = false,    // ONNX typically doesn't retry (default: true)
+    TopK = 10,                 // Return top 10 only (default: all)
+    MinScore = 0.7f,           // Filter score >= 0.7 (default: 0.0)
+    MaxItems = 1000,           // Limit the number of items processed
+    CustomOptions = new Dictionary<string, string>()
 };
 
-var result = await reranker.RerankAsync(query, documents, options);
+var result = await reranker.RerankAsync(query, items, options);
 ```
 
 ## Usage Examples
@@ -109,21 +109,21 @@ var result = await reranker.RerankAsync(query, documents, options);
 ### Basic Reranking
 
 ```csharp
-var documents = new[]
+var items = new[]
 {
-    "The quick brown fox jumps over the lazy dog.",
-    "Python is a programming language.",
-    "Machine learning is a subset of AI.",
+    new RerankItem("The quick brown fox jumps over the lazy dog."),
+    new RerankItem("Python is a programming language."),
+    new RerankItem("Machine learning is a subset of AI."),
 };
 
 var result = await reranker.RerankAsync(
     query: "What is machine learning?",
-    documents: documents
+    items: items
 );
 
-foreach (var doc in result.RankedDocuments)
+foreach (var doc in result.Scores)
 {
-    Console.WriteLine($"{doc.Rank}. {doc.Score:F3} — {doc.Text}");
+    Console.WriteLine($"{doc.Rank}. {doc.Score:F3} — {doc.Item.Text}");
 }
 ```
 
@@ -141,12 +141,12 @@ var options = new RerankOptions { TopK = 5 };
 
 var result = await reranker.RerankAsync(
     query: "machine learning",
-    documents: allDocuments,  // 100+ documents
+    items: items,  // 100+ items
     options: options
 );
 
 // Only top 5 returned
-Console.WriteLine($"Returned: {result.RankedDocuments.Count}");  // 5
+Console.WriteLine($"Returned: {result.Scores.Count}");  // 5
 ```
 
 ### Score Threshold Filtering
@@ -154,12 +154,12 @@ Console.WriteLine($"Returned: {result.RankedDocuments.Count}");  // 5
 ```csharp
 var options = new RerankOptions { MinScore = 0.7f };
 
-var result = await reranker.RerankAsync(query, documents, options);
+var result = await reranker.RerankAsync(query, items, options);
 
 // Only high-confidence results
-foreach (var doc in result.RankedDocuments)
+foreach (var doc in result.Scores)
 {
-    Console.WriteLine($"{doc.Score:F3} — {doc.Text}");
+    Console.WriteLine($"{doc.Score:F3} — {doc.Item.Text}");
 }
 ```
 
@@ -172,10 +172,10 @@ foreach (var query in queries)
 {
     var result = await reranker.RerankAsync(
         query: query,
-        documents: documents
+        items: items
     );
     
-    Console.WriteLine($"Query: {query}, Top score: {result.RankedDocuments[0].Score:F3}");
+    Console.WriteLine($"Query: {query}, Top score: {result.Scores[0].Score:F3}");
 }
 ```
 
@@ -189,7 +189,7 @@ var queries = Enumerable.Range(0, 10)
     .ToList();
 
 var tasks = queries.Select(q => 
-    reranker.RerankAsync(q, documents)
+    reranker.RerankAsync(q, items)
 ).ToList();
 
 await Task.WhenAll(tasks);
@@ -201,18 +201,18 @@ Console.WriteLine("All queries reranked!");
 
 ### Latency
 
-| Documents | P50 | P95 | P99 |
+| Items | P50 | P95 | P99 |
 |-----------|-----|-----|-----|
 | 10 | ~10ms | ~12ms | ~15ms |
 | 50 | ~12ms | ~15ms | ~18ms |
 | 100 | ~15ms | ~18ms | ~22ms |
 | 1000 | ~150ms | ~170ms | ~200ms |
 
-**Linear scaling:** ~0.15ms per document
+**Linear scaling:** ~0.15ms per item
 
 ### Throughput
 
-- Single query: 67 queries/sec (100 documents)
+- Single query: 67 queries/sec (100 items)
 - Parallel (4 cores): ~270 queries/sec
 - Parallel (8 cores): ~540 queries/sec
 
@@ -230,12 +230,12 @@ Console.WriteLine("All queries reranked!");
 - Recommended: <1,000 items for best latency
 
 ```csharp
-if (documents.Count > 10000)
+if (items.Length > 10000)
 {
     // Batch into multiple calls
-    for (int i = 0; i < documents.Count; i += 5000)
+    for (int i = 0; i < items.Length; i += 5000)
     {
-        var batch = documents.Skip(i).Take(5000);
+        var batch = items.Skip(i).Take(5000);
         var result = await reranker.RerankAsync(query, batch);
         // Process result
     }
@@ -244,11 +244,11 @@ if (documents.Count > 10000)
 
 ### Text Length
 
-- Optimal: 100–500 characters per document
+- Optimal: 100–500 characters per item
 - Maximum: 512 tokens (auto-truncated by tokenizer)
 
 ```csharp
-// Very long documents are truncated
+// Very long items are truncated
 var longDoc = "..." + longText.Substring(0, 2048) + "...";
 ```
 
@@ -265,10 +265,10 @@ var longDoc = "..." + longText.Substring(0, 2048) + "...";
 
 ```csharp
 // Valid
-await reranker.RerankAsync("Machine learning 🤖", documents);
+await reranker.RerankAsync("Machine learning 🤖", items);
 
 // Invalid — will throw
-await reranker.RerankAsync("\0\0\0", documents);
+await reranker.RerankAsync("\0\0\0", items);
 ```
 
 ## Optimization Tips
@@ -288,23 +288,23 @@ var reranker = new OnnxReranker(modelPath);
 
 ```csharp
 // Expensive: rerank all 1000, then take top 10
-var result = await reranker.RerankAsync(query, docs);
-var top10 = result.RankedDocuments.Take(10);
+var result = await reranker.RerankAsync(query, items);
+var top10 = result.Scores.Take(10);
 
 // Better: rerank only top 100
 var options = new RerankOptions { TopK = 100 };
-var result = await reranker.RerankAsync(query, docs.Take(100), options);
+var result = await reranker.RerankAsync(query, items.Take(100), options);
 ```
 
 ### 3. Filter Before Reranking
 
 ```csharp
-// Inefficient: rerank 10,000 irrelevant documents
-var candidates = await db.QueryAsync("SELECT * FROM documents");
+// Inefficient: rerank 10,000 irrelevant items
+var candidates = await db.QueryAsync("SELECT * FROM items");
 var result = await reranker.RerankAsync(query, candidates);
 
 // Better: filter first, rerank second
-var candidates = await db.QueryAsync($"SELECT * FROM documents WHERE category='{category}'");
+var candidates = await db.QueryAsync($"SELECT * FROM items WHERE category='{category}'");
 var result = await reranker.RerankAsync(query, candidates);
 ```
 
@@ -313,9 +313,9 @@ var result = await reranker.RerankAsync(query, candidates);
 ```csharp
 // For independent reranking operations
 var results = await Task.WhenAll(
-    reranker.RerankAsync(query1, docs1),
-    reranker.RerankAsync(query2, docs2),
-    reranker.RerankAsync(query3, docs3)
+    reranker.RerankAsync(query1, items1),
+    reranker.RerankAsync(query2, items2),
+    reranker.RerankAsync(query3, items3)
 );
 ```
 
@@ -324,7 +324,7 @@ var results = await Task.WhenAll(
 ```csharp
 try
 {
-    var result = await reranker.RerankAsync(query, documents);
+    var result = await reranker.RerankAsync(query, items);
 }
 catch (ArgumentException ex)
 {
@@ -333,7 +333,7 @@ catch (ArgumentException ex)
 }
 catch (ArgumentOutOfRangeException ex)
 {
-    // Too many documents or invalid score threshold
+    // Too many items or invalid score threshold
     Console.WriteLine($"Invalid parameter: {ex.Message}");
 }
 catch (Exception ex)
@@ -347,7 +347,7 @@ catch (Exception ex)
 
 - ✅ Model file downloaded and verified
 - ✅ Single reranker instance created at startup
-- ✅ Queries and documents validated before calling
+- ✅ Queries and items validated before calling
 - ✅ Error handling for edge cases
 - ✅ Timeouts configured appropriately
 - ✅ Latency monitoring in place

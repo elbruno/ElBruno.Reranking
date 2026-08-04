@@ -22,15 +22,42 @@ public static class ResultFormatter
         RerankOptions? options = null,
         long elapsedMilliseconds = 0,
         Dictionary<string, string>? diagnostics = null)
+        => Format(
+            pairs.Select(pair => (pair.item, pair.score, (string?)null)),
+            query,
+            backendName,
+            options,
+            elapsedMilliseconds,
+            diagnostics);
+
+    /// <summary>
+    /// Formats raw item-score-explanation triples into a sorted RerankResult.
+    /// </summary>
+    public static RerankResult Format(
+        IEnumerable<(RerankItem item, float score, string? explanation)> pairs,
+        string query,
+        string backendName,
+        RerankOptions? options = null,
+        long elapsedMilliseconds = 0,
+        Dictionary<string, string>? diagnostics = null)
+        => FormatCore(pairs, query, backendName, options, elapsedMilliseconds, diagnostics);
+
+    private static RerankResult FormatCore(
+        IEnumerable<(RerankItem item, float score, string? explanation)> pairs,
+        string query,
+        string backendName,
+        RerankOptions? options,
+        long elapsedMilliseconds,
+        Dictionary<string, string>? diagnostics)
     {
         var totalItems = 0;
         var scores = new List<RerankScore>();
 
         // Convert pairs to scores and sort by score descending
-        foreach (var (item, score) in pairs.OrderByDescending(p => p.score))
+        foreach (var (item, score, explanation) in pairs.OrderByDescending(p => p.score))
         {
             totalItems++;
-            scores.Add(new RerankScore(item, ScoreNormalizer.Clamp(score), scores.Count + 1));
+            scores.Add(new RerankScore(item, ScoreNormalizer.Clamp(score), scores.Count + 1, explanation));
         }
 
         // Apply filters
