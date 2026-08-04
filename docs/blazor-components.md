@@ -34,7 +34,6 @@ The sample uses Bootstrap 5.3.3, deterministic candidate data, and a determinist
 ```
 
 ```csharp
-builder.Services.AddReranking(options => { /* ... */ });
 builder.Services.AddRerankingBlazorComponents();
 ```
 

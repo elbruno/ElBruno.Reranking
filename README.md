@@ -16,7 +16,7 @@ ElBruno.Reranking improves search result relevance through intelligent semantic 
 
 ## Features
 
-✨ **Simple API** — Single `RerankAsync()` method for all backends  
+✨ **Simple API** — Single `RerankAsync(query, items, options)` method for all backends
 ⚡ **Fast ONNX inference** — BGE reranker: <100ms for 100 docs  
 🧠 **Cloud-ready Claude backend** — Leverage LLMs for high-precision reranking  
 🎯 **Pluggable architecture** — Extend with custom backends  
@@ -60,12 +60,12 @@ Install-Package ElBruno.Reranking
 using ElBruno.Reranking;
 
 // Documents to rerank
-var documents = new[]
+var items = new[]
 {
-    "Machine learning is a subset of artificial intelligence.",
-    "Deep learning uses neural networks with many layers.",
-    "The weather is sunny today.",
-    "Natural language processing enables text understanding.",
+    new RerankItem { Text = "Machine learning is a subset of artificial intelligence." },
+    new RerankItem { Text = "Deep learning uses neural networks with many layers." },
+    new RerankItem { Text = "The weather is sunny today." },
+    new RerankItem { Text = "Natural language processing enables text understanding." },
 };
 
 // Create reranker (requires BGE model file)
@@ -74,7 +74,7 @@ var reranker = new OnnxReranker("./models/bge-reranker-base.onnx");
 // Rerank
 var result = await reranker.RerankAsync(
     query: "What is machine learning?",
-    documents: documents,
+    items: items,
     options: new RerankOptions { TopK = 5 }
 );
 
@@ -98,11 +98,11 @@ Score: 0.142, Text: The weather is sunny today.
 ```csharp
 using ElBruno.Reranking;
 
-var documents = new[]
+var items = new[]
 {
-    "The capital of France is Paris.",
-    "Paris is a city known for the Eiffel Tower.",
-    "The capital of Germany is Berlin.",
+    new RerankItem { Text = "The capital of France is Paris." },
+    new RerankItem { Text = "Paris is a city known for the Eiffel Tower." },
+    new RerankItem { Text = "The capital of Germany is Berlin." },
 };
 
 // Create Claude reranker
@@ -111,8 +111,13 @@ var reranker = new ClaudeReranker(apiKey: Environment.GetEnvironmentVariable("AN
 // Rerank with explanation
 var result = await reranker.RerankAsync(
     query: "What is the capital of France?",
-    documents: documents,
-    options: new RerankOptions { TopK = 3, EnableRetry = true }
+    items: items,
+    options: new RerankOptions
+    {
+        TopK = 3,
+        MinScore = 0.2f,
+        IncludeExplanation = true
+    }
 );
 
 foreach (var score in result.Scores)
@@ -199,11 +204,12 @@ public class RerankResult
 ```csharp
 public class RerankOptions
 {
-    public int TopK { get; set; } = int.MaxValue;           // Return top-k only
-    public double MinScore { get; set; } = 0.0;             // Filter by threshold
-    public int TimeoutMs { get; set; } = 30000;             // Request timeout
-    public bool EnableRetry { get; set; } = true;           // Retry transient errors
-    public int MaxRetries { get; set; } = 3;                // Max retry attempts
+    public int? TopK { get; set; }                          // Return top-k only
+    public float? MinScore { get; set; }                    // Filter by threshold
+    public int? MaxItems { get; set; }                      // Maximum items to process
+    public int? TimeoutMs { get; set; }                     // Request timeout
+    public bool IncludeExplanation { get; set; } = false;  // Include per-item explanations
+    public Dictionary<string, string>? CustomOptions { get; set; } // Backend-specific options
 }
 ```
 
@@ -231,28 +237,36 @@ public class RerankOptions
 **Search Result Reranking** — Improve BM25 or Elasticsearch rankings
 ```csharp
 var search = await elasticsearch.SearchAsync(query);
-var reranked = await reranker.RerankAsync(query, search.Documents);
+var items = search.Documents.Select(document => new RerankItem { Text = document?.ToString() ?? string.Empty }).ToArray();
+var reranked = await reranker.RerankAsync(query, items);
 ```
 
 **RAG Pipeline Enhancement** — Improve retrieval quality for LLM context
 ```csharp
-var retrieved = vectorDb.Search(query, k=50);  // Get many candidates
-var refined = await reranker.RerankAsync(query, retrieved, new RerankOptions { TopK = 5 });
+var retrieved = vectorDb.Search(query, k: 50);  // Get many candidates
+var items = retrieved.Select(document => new RerankItem { Text = document?.ToString() ?? string.Empty }).ToArray();
+var refined = await reranker.RerankAsync(query, items, new RerankOptions { TopK = 5 });
 var context = refined.Scores.Select(s => s.Item.Text);
 ```
 
 **Content Ranking** — Reorder recommendations by query relevance
 ```csharp
 var candidates = await db.GetCandidates();
-var ranked = await reranker.RerankAsync(userQuery, candidates);
+var items = candidates.Select(candidate => new RerankItem { Text = candidate?.ToString() ?? string.Empty }).ToArray();
+var ranked = await reranker.RerankAsync(userQuery, items);
 ```
 
 ## Error Handling
 
 ```csharp
+var items = new[]
+{
+    new RerankItem { Text = "Machine learning is a subset of artificial intelligence." },
+};
+
 try
 {
-    var result = await reranker.RerankAsync(query, documents);
+    var result = await reranker.RerankAsync(query, items);
 }
 catch (ArgumentException ex)
 {
